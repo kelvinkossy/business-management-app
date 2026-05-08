@@ -1138,19 +1138,37 @@ app.post('/api/supplier-payments', authenticateToken, (req, res) => {
       LIMIT 1
     `).get(supplier_id) || { balance: 0 };
     
-    let newBalance = currentBalance.balance;
-    if (type === 'payment') {
-      newBalance += amount;
-    } else if (type === 'refund') {
-      newBalance -= amount;
-    }
+    // Get supplier name for expense description
+    const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(supplier_id);
     
-    const status = newBalance <= 0 ? 'paid' : 'pending';
+    let newBalance = currentBalance.balance;
+    let status = 'completed';
+    
+    if (type === 'payment') {
+      newBalance -= amount;
+    } else if (type === 'refund') {
+      newBalance += amount;
+    }
     
     const result = db.prepare(
       `INSERT INTO supplier_payments (supplier_id, type, amount, description, user_id, balance_after, status)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).run(supplier_id, type, amount, description, req.user.id, newBalance, status);
+    
+    // Also record as expense if it's a payment
+    if (type === 'payment') {
+      db.prepare(
+        `INSERT INTO expenses (description, category, amount, expense_date, user_id, notes)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      ).run(
+        `Payment to supplier: ${supplier ? supplier.name : 'Unknown'}`,
+        'Supplier Payment',
+        amount,
+        new Date().toISOString(),
+        req.user.id,
+        description || ''
+      );
+    }
     
     res.status(201).json({ message: 'Payment record created', id: result.lastInsertRowid, balance: newBalance });
   } catch (error) {
@@ -1158,6 +1176,7 @@ app.post('/api/supplier-payments', authenticateToken, (req, res) => {
   }
 });
 
+// ...
 // Mark supplier payment as paid
 app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
   try {
