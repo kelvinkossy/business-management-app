@@ -1202,16 +1202,21 @@ app.post('/api/supplier-payments', authenticateToken, (req, res) => {
 app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
   try {
     const { status } = req.body;
+    console.log(`Marking payment ${req.params.id} as ${status}`);
     
     // Get the payment details before updating
     const payment = db.prepare('SELECT * FROM supplier_payments WHERE id = ?').get(req.params.id);
     
     if (!payment) {
+      console.log(`Payment ${req.params.id} not found`);
       return res.status(404).json({ error: 'Payment not found' });
     }
     
+    console.log(`Current payment status: ${payment.status}, type: ${payment.type}`);
+    
     // Only create expense if status is being changed to 'paid' or 'completed' and type is 'payment'
     if ((status === 'paid' || status === 'completed') && payment.status !== status && payment.type === 'payment') {
+      console.log(`Creating expense record for payment ${payment.id}`);
       const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(payment.supplier_id);
       if (supplier) {
         try {
@@ -1226,16 +1231,22 @@ app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
             req.user.id,
             payment.description || `Supplier payment for ${supplier.name}`
           );
-          console.log(`Expense record created for payment to ${supplier.name}`);
+          console.log(`Expense record created for payment to ${supplier.name}, amount: ${payment.amount}`);
         } catch (expenseError) {
           console.error('Error creating expense record:', expenseError);
         }
+      } else {
+        console.log(`Supplier ${payment.supplier_id} not found`);
       }
+    } else {
+      console.log(`Skipping expense creation - status: ${status}, current: ${payment.status}, type: ${payment.type}`);
     }
     
     db.prepare('UPDATE supplier_payments SET status = ? WHERE id = ?').run(status, req.params.id);
+    console.log(`Payment ${req.params.id} status updated to ${status}`);
     res.json({ message: 'Payment status updated' });
   } catch (error) {
+    console.error('Error updating payment status:', error);
     res.status(500).json({ error: error.message });
   }
 });
