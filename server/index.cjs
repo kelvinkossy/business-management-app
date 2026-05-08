@@ -1191,8 +1191,8 @@ app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
       return res.status(404).json({ error: 'Payment not found' });
     }
     
-    // Only create expense if status is being changed to 'completed' and type is 'payment'
-    if (status === 'completed' && payment.status !== 'completed' && payment.type === 'payment') {
+    // Only create expense if status is being changed to 'paid' or 'completed' and type is 'payment'
+    if ((status === 'paid' || status === 'completed') && payment.status !== status && payment.type === 'payment') {
       const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(payment.supplier_id);
       if (supplier) {
         try {
