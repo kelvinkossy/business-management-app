@@ -6,7 +6,8 @@ import {
   TrendingUp,
   AlertTriangle,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  PiggyBank
 } from 'lucide-react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -68,6 +69,15 @@ const Dashboard = () => {
       trend: '-5%'
     },
     {
+      title: 'Total Savings',
+      value: `₦${stats.totalSavingsDeducted?.toFixed(2) || '0.00'}`,
+      icon: PiggyBank,
+      gradient: 'from-amber-500 to-orange-600',
+      bgLight: 'bg-amber-50',
+      textColor: 'text-amber-600',
+      trend: '+10%'
+    },
+    {
       title: 'Net Profit',
       value: `₦${stats.profit?.toFixed(2) || '0.00'}`,
       icon: ArrowUpRight,
@@ -84,6 +94,15 @@ const Dashboard = () => {
       bgLight: 'bg-purple-50',
       textColor: 'text-purple-600',
       trend: '+15%'
+    },
+    {
+      title: 'Active Savings Plans',
+      value: stats.activeSavings || 0,
+      icon: PiggyBank,
+      gradient: 'from-cyan-500 to-blue-600',
+      bgLight: 'bg-cyan-50',
+      textColor: 'text-cyan-600',
+      trend: 'Active'
     }
   ];
 
@@ -92,7 +111,7 @@ const Dashboard = () => {
       <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (

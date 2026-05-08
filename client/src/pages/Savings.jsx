@@ -18,7 +18,8 @@ const Savings = () => {
     description: '',
     amount: 0,
     percentage: 0,
-    deduct_from: 'total'
+    deduct_from: 'total',
+    deduction_frequency: 'per_sale'
   });
 
   useEffect(() => {
@@ -52,7 +53,8 @@ const Savings = () => {
         description: '',
         amount: 0,
         percentage: 0,
-        deduct_from: 'total'
+        deduct_from: 'total',
+        deduction_frequency: 'per_sale'
       });
       setEditingSavings(null);
       setShowModal(false);
@@ -65,7 +67,14 @@ const Savings = () => {
 
   const handleEdit = (saving) => {
     setEditingSavings(saving);
-    setFormData(saving);
+    setFormData({
+      name: saving.name,
+      description: saving.description || '',
+      amount: saving.amount,
+      percentage: saving.percentage || 0,
+      deduct_from: saving.deduct_from || 'total',
+      deduction_frequency: saving.deduction_frequency || 'per_sale'
+    });
     setShowModal(true);
   };
 
@@ -95,31 +104,53 @@ const Savings = () => {
     }
   };
 
+  const handleProcessDaily = async () => {
+    try {
+      const response = await axios.post('/api/savings/process-daily');
+      toast.success(response.data.message);
+      fetchSavings();
+    } catch (error) {
+      console.error('Error processing daily deductions:', error);
+      toast.error(error.response?.data?.error || 'Failed to process daily deductions');
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Savings Management</h1>
-        {isAdmin && (
-          <button
-            onClick={() => {
-              setEditingSavings(null);
-              setFormData({
-                name: '',
-                description: '',
-                amount: 0,
-                percentage: 0,
-                deduct_from: 'total'
-              });
-              setShowModal(true);
-            }}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Savings
-          </button>
-        )}
+        <div className="flex space-x-3">
+          {isAdmin && (
+            <button
+              onClick={handleProcessDaily}
+              className="flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+            >
+              Process Daily Deductions
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setEditingSavings(null);
+                setFormData({
+                  name: '',
+                  description: '',
+                  amount: 0,
+                  percentage: 0,
+                  deduct_from: 'total',
+                  deduction_frequency: 'per_sale'
+                });
+                setShowModal(true);
+              }}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Add Savings
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Savings Summary */}
@@ -153,6 +184,7 @@ const Savings = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount/Percentage</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deduct From</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frequency</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
               {isAdmin && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>}
@@ -189,6 +221,13 @@ const Savings = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">
                   {saving.deduct_from}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    saving.deduction_frequency === 'daily' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {saving.deduction_frequency === 'daily' ? 'Daily' : 'Per Sale'}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 rounded-full text-xs ${
@@ -330,6 +369,18 @@ const Savings = () => {
                   <option value="subtotal">Subtotal (excluding tax)</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Deduction Frequency</label>
+                <select
+                  value={formData.deduction_frequency}
+                  onChange={(e) => setFormData({ ...formData, deduction_frequency: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  required
+                >
+                  <option value="per_sale">Per Sale (auto-deduct from every sale)</option>
+                  <option value="daily">Daily (manual trigger required)</option>
+                </select>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -341,7 +392,8 @@ const Savings = () => {
                       description: '',
                       amount: 0,
                       percentage: 0,
-                      deduct_from: 'total'
+                      deduct_from: 'total',
+                      deduction_frequency: 'per_sale'
                     });
                   }}
                   className="px-4 py-2 border rounded-lg hover:bg-gray-50"

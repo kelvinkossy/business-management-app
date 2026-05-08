@@ -208,6 +208,7 @@ CREATE TABLE IF NOT EXISTS savings (
   amount REAL NOT NULL,
   percentage REAL DEFAULT 0,
   deduct_from TEXT DEFAULT 'total' CHECK(deduct_from IN ('total', 'subtotal')),
+  deduction_frequency TEXT DEFAULT 'per_sale' CHECK(deduction_frequency IN ('per_sale', 'daily')),
   is_active INTEGER DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   ended_at DATETIME
@@ -217,9 +218,10 @@ CREATE TABLE IF NOT EXISTS savings (
 CREATE TABLE IF NOT EXISTS savings_transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   savings_id INTEGER NOT NULL,
-  sale_id INTEGER NOT NULL,
+  sale_id INTEGER,
   amount REAL NOT NULL,
   transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  transaction_type TEXT DEFAULT 'sale' CHECK(transaction_type IN ('sale', 'daily')),
   FOREIGN KEY (savings_id) REFERENCES savings(id),
   FOREIGN KEY (sale_id) REFERENCES sales(id)
 );

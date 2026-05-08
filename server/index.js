@@ -326,12 +326,12 @@ app.post('/api/sales', authenticateToken, (req, res) => {
       });
     }
 
-    // Auto-deduct savings from sales
-    const activeSavings = db.prepare('SELECT * FROM savings WHERE is_active = 1').all();
+    // Auto-deduct savings from sales (only per_sale savings)
+    const perSaleSavings = db.prepare("SELECT * FROM savings WHERE is_active = 1 AND deduction_frequency = 'per_sale'").all();
     const deductFromTotal = total;
     const deductFromSubtotal = subtotal;
 
-    activeSavings.forEach(saving => {
+    perSaleSavings.forEach(saving => {
       let deductionAmount = 0;
 
       if (saving.percentage > 0) {
@@ -346,8 +346,8 @@ app.post('/api/sales', authenticateToken, (req, res) => {
       // Only deduct if the amount is positive and less than the sale total
       if (deductionAmount > 0 && deductionAmount <= deductFromTotal) {
         db.prepare(
-          'INSERT INTO savings_transactions (savings_id, sale_id, amount) VALUES (?, ?, ?)'
-        ).run(saving.id, saleId, deductionAmount);
+          'INSERT INTO savings_transactions (savings_id, sale_id, amount, transaction_type) VALUES (?, ?, ?, ?)'
+        ).run(saving.id, saleId, deductionAmount, 'sale');
       }
     });
 
@@ -428,10 +428,10 @@ app.get('/api/savings', authenticateToken, (req, res) => {
 
 app.post('/api/savings', authenticateToken, requireAdmin, (req, res) => {
   try {
-    const { name, description, amount, percentage, deduct_from } = req.body;
+    const { name, description, amount, percentage, deduct_from, deduction_frequency } = req.body;
     const result = db.prepare(
-      'INSERT INTO savings (name, description, amount, percentage, deduct_from) VALUES (?, ?, ?, ?, ?)'
-    ).run(name, description, amount, percentage || 0, deduct_from || 'total');
+      'INSERT INTO savings (name, description, amount, percentage, deduct_from, deduction_frequency) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(name, description, amount, percentage || 0, deduct_from || 'total', deduction_frequency || 'per_sale');
     res.status(201).json({ message: 'Savings created', id: result.lastInsertRowid });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -440,10 +440,10 @@ app.post('/api/savings', authenticateToken, requireAdmin, (req, res) => {
 
 app.put('/api/savings/:id', authenticateToken, requireAdmin, (req, res) => {
   try {
-    const { name, description, amount, percentage, deduct_from } = req.body;
+    const { name, description, amount, percentage, deduct_from, deduction_frequency } = req.body;
     db.prepare(
-      'UPDATE savings SET name = ?, description = ?, amount = ?, percentage = ?, deduct_from = ? WHERE id = ?'
-    ).run(name, description, amount, percentage || 0, deduct_from || 'total', req.params.id);
+      'UPDATE savings SET name = ?, description = ?, amount = ?, percentage = ?, deduct_from = ?, deduction_frequency = ? WHERE id = ?'
+    ).run(name, description, amount, percentage || 0, deduct_from || 'total', deduction_frequency || 'per_sale', req.params.id);
     res.json({ message: 'Savings updated' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -464,21 +464,56 @@ app.delete('/api/savings/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json({ message: 'Savings deleted' });
 });
 
+// Trigger daily savings deductions (admin only)
+app.post('/api/savings/process-daily', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const dailySavings = db.prepare("SELECT * FROM savings WHERE is_active = 1 AND deduction_frequency = 'daily'").all();
+    const today = new Date().toISOString().split('T')[0];
+    
+    let totalDeducted = 0;
+    
+    dailySavings.forEach(saving => {
+      // Check if already deducted today
+      const existingDeduction = db.prepare(
+        `SELECT * FROM savings_transactions 
+         WHERE savings_id = ? AND DATE(transaction_date) = ? AND transaction_type = 'daily'`
+      ).get(saving.id, today);
+      
+      if (!existingDeduction) {
+        db.prepare(
+          'INSERT INTO savings_transactions (savings_id, sale_id, amount, transaction_type) VALUES (?, NULL, ?, ?)'
+        ).run(saving.id, saving.amount, 'daily');
+        totalDeducted += saving.amount;
+      }
+    });
+    
+    res.json({ message: `Processed daily deductions for ${dailySavings.length} savings plans`, totalDeducted });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Dashboard Routes
 app.get('/api/dashboard/stats', authenticateToken, (req, res) => {
   const totalRevenue = db.prepare('SELECT COALESCE(SUM(total), 0) as total FROM sales').get().total;
   const totalExpenses = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM expenses').get().total;
   const totalSales = db.prepare('SELECT COUNT(*) as count FROM sales').get().count;
   const lowStockProducts = db.prepare('SELECT COUNT(*) as count FROM products WHERE quantity < 10').get().count;
-  
-  const profit = totalRevenue - totalExpenses;
+
+  // Savings statistics
+  const totalSavingsDeducted = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM savings_transactions').get().total;
+  const activeSavings = db.prepare('SELECT COUNT(*) as count FROM savings WHERE is_active = 1').get().count;
+
+  const profit = totalRevenue - totalExpenses - totalSavingsDeducted;
 
   res.json({
     totalRevenue,
     totalExpenses,
-    profit,
+    totalSavingsDeducted,
     totalSales,
-    lowStockProducts
+    lowStockProducts,
+    activeSavings,
+    profit
   });
 });
 
