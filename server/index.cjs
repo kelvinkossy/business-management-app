@@ -1183,6 +1183,37 @@ app.post('/api/supplier-payments', authenticateToken, (req, res) => {
 app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
   try {
     const { status } = req.body;
+    
+    // Get the payment details before updating
+    const payment = db.prepare('SELECT * FROM supplier_payments WHERE id = ?').get(req.params.id);
+    
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+    
+    // Only create expense if status is being changed to 'completed' and type is 'payment'
+    if (status === 'completed' && payment.status !== 'completed' && payment.type === 'payment') {
+      const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(payment.supplier_id);
+      if (supplier) {
+        try {
+          db.prepare(
+            `INSERT INTO expenses (description, category, amount, expense_date, user_id, notes)
+             VALUES (?, ?, ?, ?, ?, ?)`
+          ).run(
+            `Payment to ${supplier.name}`,
+            'Supplier Payment',
+            payment.amount,
+            new Date().toISOString(),
+            req.user.id,
+            payment.description || `Supplier payment for ${supplier.name}`
+          );
+          console.log(`Expense record created for payment to ${supplier.name}`);
+        } catch (expenseError) {
+          console.error('Error creating expense record:', expenseError);
+        }
+      }
+    }
+    
     db.prepare('UPDATE supplier_payments SET status = ? WHERE id = ?').run(status, req.params.id);
     res.json({ message: 'Payment status updated' });
   } catch (error) {
