@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 const cron = require('node-cron');
 require('dotenv/config');
 
@@ -14,9 +15,27 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 app.use(cors());
 app.use(express.json());
 
+// Ensure database directory exists
+const dbDir = path.join(__dirname, 'database');
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+  console.log('Database directory created');
+}
+
 // Initialize database
-const db = new Database(path.join(__dirname, 'database', 'business.db'));
-console.log('Database initialized successfully');
+const dbPath = path.join(dbDir, 'business.db');
+const db = new Database(dbPath);
+console.log('Database initialized successfully at:', dbPath);
+
+// Initialize database schema
+const schemaPath = path.join(__dirname, 'database', 'schema.sql');
+if (fs.existsSync(schemaPath)) {
+  const schema = fs.readFileSync(schemaPath, 'utf8');
+  db.exec(schema);
+  console.log('Database schema initialized');
+} else {
+  console.log('Schema file not found at:', schemaPath);
+}
 
 // Serve static files from React app
 app.use(express.static(path.join(__dirname, '../client/dist')));
