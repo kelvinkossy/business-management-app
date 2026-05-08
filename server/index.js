@@ -431,7 +431,7 @@ app.post('/api/savings', authenticateToken, requireAdmin, (req, res) => {
     const { name, description, amount, percentage, deduct_from, deduction_frequency } = req.body;
     const result = db.prepare(
       'INSERT INTO savings (name, description, amount, percentage, deduct_from, deduction_frequency) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(name, description, amount, percentage || 0, deduct_from || 'total', deduction_frequency || 'per_sale');
+    ).run(name, description, amount, percentage || 0, deduct_from || 'total', deduction_frequency || 'daily');
     res.status(201).json({ message: 'Savings created', id: result.lastInsertRowid });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -443,7 +443,7 @@ app.put('/api/savings/:id', authenticateToken, requireAdmin, (req, res) => {
     const { name, description, amount, percentage, deduct_from, deduction_frequency } = req.body;
     db.prepare(
       'UPDATE savings SET name = ?, description = ?, amount = ?, percentage = ?, deduct_from = ?, deduction_frequency = ? WHERE id = ?'
-    ).run(name, description, amount, percentage || 0, deduct_from || 'total', deduction_frequency || 'per_sale', req.params.id);
+    ).run(name, description, amount, percentage || 0, deduct_from || 'total', deduction_frequency || 'daily', req.params.id);
     res.json({ message: 'Savings updated' });
   } catch (error) {
     res.status(500).json({ error: error.message });

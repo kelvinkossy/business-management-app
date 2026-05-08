@@ -213,10 +213,8 @@ const Savings = () => {
                   {saving.deduct_from}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    saving.deduction_frequency === 'daily' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {saving.deduction_frequency === 'daily' ? 'Daily' : 'Per Sale'}
+                  <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs">
+                    Payday
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -360,15 +358,14 @@ const Savings = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Deduction Frequency</label>
+                <label className="block text-sm font-medium mb-1">Deduction Type</label>
                 <select
                   value={formData.deduction_frequency}
                   onChange={(e) => setFormData({ ...formData, deduction_frequency: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
                   required
                 >
-                  <option value="per_sale">Per Sale (auto-deduct from every sale)</option>
-                  <option value="daily">Daily (automatic at midnight)</option>
+                  <option value="daily">Payday (automatic daily at midnight)</option>
                 </select>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
