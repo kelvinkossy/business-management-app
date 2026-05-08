@@ -2,11 +2,10 @@
   "name": "business-management-server",
   "version": "1.0.0",
   "description": "Backend for Business Management App",
-  "main": "index.js",
-  "type": "module",
+  "main": "index.cjs",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js"
+    "dev": "nodemon index.cjs",
+    "start": "node index.cjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

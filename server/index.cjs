@@ -7,15 +7,16 @@ const path = require('path');
 const cron = require('node-cron');
 require('dotenv/config');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 app.use(cors());
 app.use(express.json());
+
+// Initialize database
+const db = new Database(path.join(__dirname, 'database', 'business.db'));
+console.log('Database initialized successfully');
 
 // Serve static files from React app
 app.use(express.static(path.join(__dirname, '../client/dist')));
@@ -372,6 +373,16 @@ app.get('/api/sales/:id', authenticateToken, (req, res) => {
   `).all(req.params.id);
 
   res.json({ ...sale, items, manualItems });
+});
+
+app.get('/api/expenses', authenticateToken, (req, res) => {
+  const expenses = db.prepare(`
+    SELECT e.*, u.name as user_name 
+    FROM expenses e 
+    LEFT JOIN users u ON e.user_id = u.id
+    ORDER BY e.expense_date DESC
+  `).all();
+  res.json(expenses);
 });
 
 app.post('/api/expenses', authenticateToken, (req, res) => {
