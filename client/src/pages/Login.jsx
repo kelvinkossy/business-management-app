@@ -1,15 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Building2 } from 'lucide-react';
+import axios from 'axios';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [businessName, setBusinessName] = useState('Business Manager');
+  const [businessLogo, setBusinessLogo] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchBusinessSettings();
+  }, []);
+
+  const fetchBusinessSettings = async () => {
+    try {
+      const response = await axios.get('/api/business-settings');
+      if (response.data) {
+        setBusinessName(response.data.business_name || 'Business Manager');
+        setBusinessLogo(response.data.logo_url);
+      }
+    } catch (error) {
+      console.error('Error fetching business settings:', error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,9 +50,13 @@ const Login = () => {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <Building2 className="w-8 h-8 text-white" />
+            {businessLogo ? (
+              <img src={businessLogo} alt="Logo" className="w-10 h-10 object-contain rounded-full" />
+            ) : (
+              <Building2 className="w-8 h-8 text-white" />
+            )}
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Business Manager</h2>
+          <h2 className="text-3xl font-bold text-gray-900">{businessName}</h2>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
         </div>
 
@@ -76,10 +99,6 @@ const Login = () => {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Default admin: admin@business.com / admin123</p>
-        </div>
       </div>
     </div>
   );

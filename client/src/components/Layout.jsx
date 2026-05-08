@@ -19,12 +19,31 @@ import {
   BookOpen,
   CreditCard
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [businessName, setBusinessName] = useState('Business Manager');
+  const [businessLogo, setBusinessLogo] = useState(null);
+
+  useEffect(() => {
+    fetchBusinessSettings();
+  }, []);
+
+  const fetchBusinessSettings = async () => {
+    try {
+      const response = await axios.get('/api/business-settings');
+      if (response.data) {
+        setBusinessName(response.data.business_name || 'Business Manager');
+        setBusinessLogo(response.data.logo_url);
+      }
+    } catch (error) {
+      console.error('Error fetching business settings:', error);
+    }
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -64,8 +83,12 @@ const Layout = ({ children }) => {
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between h-20 px-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-purple-600">
             <h1 className="text-xl font-bold text-white flex items-center">
-              <LayoutDashboard className="w-6 h-6 mr-2" />
-              Business Manager
+              {businessLogo ? (
+                <img src={businessLogo} alt="Logo" className="w-8 h-8 mr-2 object-contain rounded-full bg-white" />
+              ) : (
+                <LayoutDashboard className="w-6 h-6 mr-2" />
+              )}
+              {businessName}
             </h1>
             <button
               onClick={() => setSidebarOpen(false)}
