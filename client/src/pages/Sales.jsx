@@ -31,8 +31,10 @@ const Sales = () => {
   const [notes, setNotes] = useState('');
   const [isManualSale, setIsManualSale] = useState(false);
   const [isCreditSale, setIsCreditSale] = useState(false);
+  const [isQuickSale, setIsQuickSale] = useState(false);
 
   const [manualItem, setManualItem] = useState({ item_name: '', quantity: 1, unit_price: 0 });
+  const [quickSaleAmount, setQuickSaleAmount] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -124,6 +126,35 @@ const Sales = () => {
     e.preventDefault();
     const { subtotal, tax, total } = calculateTotals();
 
+    // For quick sales (admin only), bypass item requirements
+    if (isAdmin && isQuickSale) {
+      if (quickSaleAmount <= 0) {
+        toast.error('Please enter a valid amount');
+        return;
+      }
+      try {
+        const saleResponse = await axios.post('/api/sales', {
+          customer_id: selectedCustomer || null,
+          items: [],
+          manualItems: [{ item_name: 'Quick Sale', quantity: 1, unit_price: quickSaleAmount, total: quickSaleAmount }],
+          subtotal: quickSaleAmount,
+          tax: 0,
+          total: quickSaleAmount,
+          payment_method: paymentMethod,
+          notes: notes || 'Quick Sale',
+          is_manual: true
+        });
+        toast.success('Quick sale recorded successfully');
+        resetForm();
+        setShowModal(false);
+        fetchData();
+      } catch (error) {
+        console.error('Error creating quick sale:', error);
+        toast.error(error.response?.data?.error || 'Failed to create quick sale');
+      }
+      return;
+    }
+
     if (saleItems.length === 0 && manualItems.length === 0) {
       toast.error('Please add items to the sale');
       return;
@@ -166,6 +197,8 @@ const Sales = () => {
       setSelectedCustomer('');
       setNotes('');
       setIsCreditSale(false);
+      setIsQuickSale(false);
+      setQuickSaleAmount(0);
       fetchData();
     } catch (error) {
       console.error('Error creating sale:', error);
@@ -218,7 +251,17 @@ const Sales = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Sales</h1>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setSaleItems([]);
+            setManualItems([]);
+            setSelectedCustomer('');
+            setNotes('');
+            setIsCreditSale(false);
+            setIsManualSale(false);
+            setIsQuickSale(false);
+            setQuickSaleAmount(0);
+            setShowModal(true);
+          }}
           className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -307,7 +350,36 @@ const Sales = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">New Sale</h2>
+            {isAdmin && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isQuickSale}
+                    onChange={(e) => setIsQuickSale(e.target.checked)}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm font-medium">Quick Sale (Enter amount directly)</span>
+                </label>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isAdmin && isQuickSale ? (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Sale Amount (₦)</label>
+                  <input
+                    type="number"
+                    value={quickSaleAmount}
+                    onChange={(e) => setQuickSaleAmount(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    min="0"
+                    step="0.01"
+                    required
+                    placeholder="Enter amount"
+                  />
+                </div>
+              ) : (
+                <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Customer</label>
@@ -482,13 +554,15 @@ const Sales = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowModal(false);
                     setSaleItems([]);
                     setManualItems([]);
                     setSelectedCustomer('');
                     setNotes('');
                     setIsCreditSale(false);
                     setIsManualSale(false);
+                    setIsQuickSale(false);
+                    setQuickSaleAmount(0);
+                    setShowModal(false);
                   }}
                   className="px-4 py-2 border rounded-lg hover:bg-gray-50"
                 >
@@ -501,6 +575,8 @@ const Sales = () => {
                   Complete Sale
                 </button>
               </div>
+              </>
+              )}
             </form>
           </div>
         </div>
