@@ -367,7 +367,7 @@ app.get('/api/expense-categories', authenticateToken, (req, res) => {
   res.json(categories);
 });
 
-app.post('/api/expense-categories', authenticateToken, requireAdmin, (req, res) => {
+app.post('/api/expense-categories', authenticateToken, (req, res) => {
   try {
     const { name } = req.body;
     if (!name) {

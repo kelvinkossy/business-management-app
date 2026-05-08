@@ -173,18 +173,16 @@ const Expenses = () => {
           <Plus className="w-5 h-5 mr-2" />
           Add Expense
         </button>
-        {isAdmin && (
-          <button
-            onClick={() => {
-              setCategoryFormData({ name: '' });
-              setShowCategoryModal(true);
-            }}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Category
-          </button>
-        )}
+        <button
+          onClick={() => {
+            setCategoryFormData({ name: '' });
+            setShowCategoryModal(true);
+          }}
+          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Add Category
+        </button>
       </div>
 
       <div className="space-y-4">
