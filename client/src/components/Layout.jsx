@@ -17,7 +17,8 @@ import {
   ArrowRightLeft,
   TrendingUp,
   BookOpen,
-  CreditCard
+  CreditCard,
+  PiggyBank
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -51,6 +52,7 @@ const Layout = ({ children }) => {
     { name: 'Sales', href: '/sales', icon: ShoppingCart },
     { name: 'Expenses', href: '/expenses', icon: DollarSign },
     { name: 'Expense Reports', href: '/expense-reports', icon: BarChart3 },
+    { name: 'Savings', href: '/savings', icon: PiggyBank },
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Suppliers', href: '/suppliers', icon: Truck },
     { name: 'Business Reports', href: '/reports', icon: FileText },

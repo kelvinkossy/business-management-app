@@ -200,6 +200,30 @@ CREATE TABLE IF NOT EXISTS staff_sales (
   FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
+-- Savings table (for daily savings auto-deduction)
+CREATE TABLE IF NOT EXISTS savings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT,
+  amount REAL NOT NULL,
+  percentage REAL DEFAULT 0,
+  deduct_from TEXT DEFAULT 'total' CHECK(deduct_from IN ('total', 'subtotal')),
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ended_at DATETIME
+);
+
+-- Savings transactions table (to track savings deductions)
+CREATE TABLE IF NOT EXISTS savings_transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  savings_id INTEGER NOT NULL,
+  sale_id INTEGER NOT NULL,
+  amount REAL NOT NULL,
+  transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (savings_id) REFERENCES savings(id),
+  FOREIGN KEY (sale_id) REFERENCES sales(id)
+);
+
 -- Insert default admin user (password: admin123)
 INSERT OR IGNORE INTO users (email, password, name, role)
 VALUES ('admin@business.com', '$2a$10$XQwZzWzZzZzZzZzZzZzO', 'Admin User', 'admin');

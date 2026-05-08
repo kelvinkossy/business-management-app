@@ -16,6 +16,7 @@ import StockAllocation from './pages/StockAllocation';
 import StaffSales from './pages/StaffSales';
 import DebtBook from './pages/DebtBook';
 import SupplierPayments from './pages/SupplierPayments';
+import Savings from './pages/Savings';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -62,6 +63,7 @@ function App() {
                     <Route path="/sales" element={<Sales />} />
                     <Route path="/expenses" element={<Expenses />} />
                     <Route path="/expense-reports" element={<ProtectedRoute><ExpenseReports /></ProtectedRoute>} />
+                    <Route path="/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
                     <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
                     <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
                     <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

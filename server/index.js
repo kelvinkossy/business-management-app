@@ -291,7 +291,7 @@ app.get('/api/sales/:id', authenticateToken, (req, res) => {
 app.post('/api/sales', authenticateToken, (req, res) => {
   try {
     const { customer_id, items, manualItems, subtotal, tax, discount, total, payment_method, notes, is_manual } = req.body;
-    
+
     const result = db.prepare(
       `INSERT INTO sales (customer_id, user_id, subtotal, tax, discount, total, payment_method, notes, is_manual)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -304,10 +304,10 @@ app.post('/api/sales', authenticateToken, (req, res) => {
       const insertItem = db.prepare(
         'INSERT INTO sale_items (sale_id, product_id, product_name, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?, ?)'
       );
-      
+
       items.forEach(item => {
         insertItem.run(saleId, item.product_id, item.product_name, item.quantity, item.unit_price, item.total);
-        
+
         // Update product quantity
         db.prepare(
           'UPDATE products SET quantity = quantity - ? WHERE id = ?'
@@ -320,11 +320,36 @@ app.post('/api/sales', authenticateToken, (req, res) => {
       const insertManualItem = db.prepare(
         'INSERT INTO manual_sale_items (sale_id, item_name, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?)'
       );
-      
+
       manualItems.forEach(item => {
         insertManualItem.run(saleId, item.item_name, item.quantity, item.unit_price, item.total);
       });
     }
+
+    // Auto-deduct savings from sales
+    const activeSavings = db.prepare('SELECT * FROM savings WHERE is_active = 1').all();
+    const deductFromTotal = total;
+    const deductFromSubtotal = subtotal;
+
+    activeSavings.forEach(saving => {
+      let deductionAmount = 0;
+
+      if (saving.percentage > 0) {
+        // Percentage-based deduction
+        const baseAmount = saving.deduct_from === 'subtotal' ? deductFromSubtotal : deductFromTotal;
+        deductionAmount = baseAmount * (saving.percentage / 100);
+      } else {
+        // Fixed amount deduction
+        deductionAmount = saving.amount;
+      }
+
+      // Only deduct if the amount is positive and less than the sale total
+      if (deductionAmount > 0 && deductionAmount <= deductFromTotal) {
+        db.prepare(
+          'INSERT INTO savings_transactions (savings_id, sale_id, amount) VALUES (?, ?, ?)'
+        ).run(saving.id, saleId, deductionAmount);
+      }
+    });
 
     res.status(201).json({ message: 'Sale created', id: saleId });
   } catch (error) {
@@ -332,15 +357,21 @@ app.post('/api/sales', authenticateToken, (req, res) => {
   }
 });
 
-// Expenses Routes
-app.get('/api/expenses', authenticateToken, (req, res) => {
-  const expenses = db.prepare(`
-    SELECT e.*, u.name as user_name 
-    FROM expenses e 
-    LEFT JOIN users u ON e.user_id = u.id
-    ORDER BY e.expense_date DESC
-  `).all();
-  res.json(expenses);
+app.get('/api/sales/:id', authenticateToken, (req, res) => {
+  const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id);
+  if (!sale) {
+    return res.status(404).json({ error: 'Sale not found' });
+  }
+
+  const items = db.prepare(`
+    SELECT * FROM sale_items WHERE sale_id = ?
+  `).all(req.params.id);
+
+  const manualItems = db.prepare(`
+    SELECT * FROM manual_sale_items WHERE sale_id = ?
+  `).all(req.params.id);
+
+  res.json({ ...sale, items, manualItems });
 });
 
 app.post('/api/expenses', authenticateToken, (req, res) => {
@@ -387,6 +418,50 @@ app.post('/api/expense-categories', authenticateToken, (req, res) => {
 app.delete('/api/expense-categories/:id', authenticateToken, requireAdmin, (req, res) => {
   db.prepare('DELETE FROM expense_categories WHERE id = ?').run(req.params.id);
   res.json({ message: 'Category deleted' });
+});
+
+// Savings Routes
+app.get('/api/savings', authenticateToken, (req, res) => {
+  const savings = db.prepare('SELECT * FROM savings ORDER BY created_at DESC').all();
+  res.json(savings);
+});
+
+app.post('/api/savings', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { name, description, amount, percentage, deduct_from } = req.body;
+    const result = db.prepare(
+      'INSERT INTO savings (name, description, amount, percentage, deduct_from) VALUES (?, ?, ?, ?, ?)'
+    ).run(name, description, amount, percentage || 0, deduct_from || 'total');
+    res.status(201).json({ message: 'Savings created', id: result.lastInsertRowid });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/savings/:id', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { name, description, amount, percentage, deduct_from } = req.body;
+    db.prepare(
+      'UPDATE savings SET name = ?, description = ?, amount = ?, percentage = ?, deduct_from = ? WHERE id = ?'
+    ).run(name, description, amount, percentage || 0, deduct_from || 'total', req.params.id);
+    res.json({ message: 'Savings updated' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/savings/:id/end', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    db.prepare('UPDATE savings SET is_active = 0, ended_at = CURRENT_TIMESTAMP WHERE id = ?').run(req.params.id);
+    res.json({ message: 'Savings ended' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/savings/:id', authenticateToken, requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM savings WHERE id = ?').run(req.params.id);
+  res.json({ message: 'Savings deleted' });
 });
 
 // Dashboard Routes
