@@ -12,6 +12,25 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 app.use(cors());
 app.use(express.json());
 
+// Auto-register admin user if not exists
+const ensureAdminUser = () => {
+  const adminEmail = 'kelvinkossy@gmail.com';
+  const adminPassword = 'Kechi0302';
+  const adminName = 'Admin User';
+
+  const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail);
+  if (!existingAdmin) {
+    const hashedPassword = bcrypt.hashSync(adminPassword, 10);
+    db.prepare('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)').run(
+      adminEmail, hashedPassword, adminName, 'admin'
+    );
+    console.log('Admin user auto-registered');
+  }
+};
+
+// Run on startup
+ensureAdminUser();
+
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
