@@ -1138,9 +1138,6 @@ app.post('/api/supplier-payments', authenticateToken, (req, res) => {
       LIMIT 1
     `).get(supplier_id) || { balance: 0 };
     
-    // Get supplier name for expense description
-    const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(supplier_id);
-    
     let newBalance = currentBalance.balance;
     let status = 'completed';
     
@@ -1155,19 +1152,25 @@ app.post('/api/supplier-payments', authenticateToken, (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).run(supplier_id, type, amount, description, req.user.id, newBalance, status);
     
-    // Also record as expense if it's a payment
-    if (type === 'payment') {
-      db.prepare(
-        `INSERT INTO expenses (description, category, amount, expense_date, user_id, notes)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      ).run(
-        `Payment to supplier: ${supplier ? supplier.name : 'Unknown'}`,
-        'Supplier Payment',
-        amount,
-        new Date().toISOString(),
-        req.user.id,
-        description || ''
-      );
+    // Also create an expense record for supplier payments
+    const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(supplier_id);
+    if (type === 'payment' && supplier) {
+      try {
+        db.prepare(
+          `INSERT INTO expenses (description, category, amount, expense_date, user_id, notes)
+           VALUES (?, ?, ?, ?, ?, ?)`
+        ).run(
+          `Payment to ${supplier.name}`,
+          'Supplier Payment',
+          amount,
+          new Date().toISOString(),
+          req.user.id,
+          description || `Supplier payment for ${supplier.name}`
+        );
+        console.log(`Expense record created for payment to ${supplier.name}`);
+      } catch (expenseError) {
+        console.error('Error creating expense record:', expenseError);
+      }
     }
     
     res.status(201).json({ message: 'Payment record created', id: result.lastInsertRowid, balance: newBalance });
@@ -1176,7 +1179,6 @@ app.post('/api/supplier-payments', authenticateToken, (req, res) => {
   }
 });
 
-// ...
 // Mark supplier payment as paid
 app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
   try {
