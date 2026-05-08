@@ -50,11 +50,6 @@ npm run dev
 
 3. Open your browser to `http://localhost:5173`
 
-### Default Admin Account
-
-- Email: admin@business.com
-- Password: admin123
-
 ## Project Structure
 
 ```

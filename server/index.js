@@ -4,11 +4,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from './database/init.js';
 import 'dotenv/config';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,11 +11,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from React app
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
-// API Routes should come before the catch-all
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -968,11 +958,6 @@ app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
-
-// Catch-all route to serve React app for client-side routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 app.listen(PORT, () => {
