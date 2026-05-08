@@ -1,11 +1,11 @@
-import express from 'express';
-import cors from 'cors';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import db from './database/init.js';
-import 'dotenv/config';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const express = require('express');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const Database = require('better-sqlite3');
+const path = require('path');
+const cron = require('node-cron');
+require('dotenv/config');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -492,6 +492,39 @@ app.post('/api/savings/process-daily', authenticateToken, requireAdmin, (req, re
     res.status(500).json({ error: error.message });
   }
 });
+
+// Automatic daily savings deduction (runs every day at midnight)
+const processDailySavings = () => {
+  try {
+    const dailySavings = db.prepare("SELECT * FROM savings WHERE is_active = 1 AND deduction_frequency = 'daily'").all();
+    const today = new Date().toISOString().split('T')[0];
+    
+    console.log(`Processing daily savings for ${dailySavings.length} plans on ${today}`);
+    
+    dailySavings.forEach(saving => {
+      // Check if already deducted today
+      const existingDeduction = db.prepare(
+        `SELECT * FROM savings_transactions 
+         WHERE savings_id = ? AND DATE(transaction_date) = ? AND transaction_type = 'daily'`
+      ).get(saving.id, today);
+      
+      if (!existingDeduction) {
+        db.prepare(
+          'INSERT INTO savings_transactions (savings_id, sale_id, amount, transaction_type) VALUES (?, NULL, ?, ?)'
+        ).run(saving.id, saving.amount, 'daily');
+        console.log(`Deducted ₦${saving.amount} for savings plan: ${saving.name}`);
+      }
+    });
+    
+    console.log('Daily savings processing completed');
+  } catch (error) {
+    console.error('Error processing daily savings:', error);
+  }
+};
+
+// Schedule daily savings deduction to run at midnight every day
+cron.schedule('0 0 * * *', processDailySavings);
+console.log('Daily savings deduction scheduled for midnight every day');
 
 // Dashboard Routes
 app.get('/api/dashboard/stats', authenticateToken, (req, res) => {

@@ -121,36 +121,26 @@ const Savings = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Savings Management</h1>
-        <div className="flex space-x-3">
-          {isAdmin && (
-            <button
-              onClick={handleProcessDaily}
-              className="flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
-            >
-              Process Daily Deductions
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              onClick={() => {
-                setEditingSavings(null);
-                setFormData({
-                  name: '',
-                  description: '',
-                  amount: 0,
-                  percentage: 0,
-                  deduct_from: 'total',
-                  deduction_frequency: 'per_sale'
-                });
-                setShowModal(true);
-              }}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Savings
-            </button>
-          )}
-        </div>
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setEditingSavings(null);
+              setFormData({
+                name: '',
+                description: '',
+                amount: 0,
+                percentage: 0,
+                deduct_from: 'total',
+                deduction_frequency: 'per_sale'
+              });
+              setShowModal(true);
+            }}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Savings
+          </button>
+        )}
       </div>
 
       {/* Savings Summary */}
@@ -378,7 +368,7 @@ const Savings = () => {
                   required
                 >
                   <option value="per_sale">Per Sale (auto-deduct from every sale)</option>
-                  <option value="daily">Daily (manual trigger required)</option>
+                  <option value="daily">Daily (automatic at midnight)</option>
                 </select>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
