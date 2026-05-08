@@ -110,14 +110,17 @@ const Expenses = () => {
   const handleAddCategory = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/expense-categories', categoryFormData);
+      console.log('Adding category:', categoryFormData);
+      const response = await axios.post('/api/expense-categories', categoryFormData);
+      console.log('Category add response:', response.data);
       toast.success('Category added successfully');
       setCategoryFormData({ name: '' });
       setShowCategoryModal(false);
       fetchCategories();
     } catch (error) {
       console.error('Error adding category:', error);
-      toast.error(error.response?.data?.error || 'Failed to add category');
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to add category';
+      toast.error(errorMsg);
     }
   };
 
