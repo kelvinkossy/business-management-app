@@ -7,8 +7,10 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 
 const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -25,11 +27,23 @@ const Expenses = () => {
     notes: ''
   });
 
-  const categories = ['Rent', 'Utilities', 'Salaries', 'Supplies', 'Marketing', 'Travel', 'Fuel', 'Other'];
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: ''
+  });
 
   useEffect(() => {
     fetchExpenses();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get('/api/expense-categories');
+      setCategories(response.data.map(cat => cat.name));
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   const fetchExpenses = async () => {
     try {
@@ -93,6 +107,20 @@ const Expenses = () => {
     setShowModal(true);
   };
 
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('/api/expense-categories', categoryFormData);
+      toast.success('Category added successfully');
+      setCategoryFormData({ name: '' });
+      setShowCategoryModal(false);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast.error(error.response?.data?.error || 'Failed to add category');
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!isAdmin) return;
     if (window.confirm('Are you sure you want to delete this expense?')) {
@@ -145,6 +173,18 @@ const Expenses = () => {
           <Plus className="w-5 h-5 mr-2" />
           Add Expense
         </button>
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setCategoryFormData({ name: '' });
+              setShowCategoryModal(true);
+            }}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Category
+          </button>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -360,6 +400,43 @@ const Expenses = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Add Expense
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Add Category</h2>
+            <form onSubmit={handleAddCategory} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Category Name</label>
+                <input
+                  type="text"
+                  value={categoryFormData.name}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  required
+                  placeholder="e.g., Transportation"
+                />
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Add Category
                 </button>
               </div>
             </form>

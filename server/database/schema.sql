@@ -99,6 +99,17 @@ CREATE TABLE IF NOT EXISTS expenses (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Expense Categories table
+CREATE TABLE IF NOT EXISTS expense_categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default expense categories
+INSERT OR IGNORE INTO expense_categories (name) VALUES
+('Rent'), ('Utilities'), ('Salaries'), ('Supplies'), ('Marketing'), ('Travel'), ('Fuel'), ('Other');
+
 -- Invoices table
 CREATE TABLE IF NOT EXISTS invoices (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

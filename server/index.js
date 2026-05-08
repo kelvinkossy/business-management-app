@@ -361,6 +361,34 @@ app.delete('/api/expenses/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json({ message: 'Expense deleted' });
 });
 
+// Expense Categories Routes
+app.get('/api/expense-categories', authenticateToken, (req, res) => {
+  const categories = db.prepare('SELECT * FROM expense_categories ORDER BY name').all();
+  res.json(categories);
+});
+
+app.post('/api/expense-categories', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+    const result = db.prepare('INSERT INTO expense_categories (name) VALUES (?)').run(name);
+    res.status(201).json({ message: 'Category created', id: result.lastInsertRowid });
+  } catch (error) {
+    if (error.message.includes('UNIQUE constraint')) {
+      res.status(400).json({ error: 'Category already exists' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+app.delete('/api/expense-categories/:id', authenticateToken, requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM expense_categories WHERE id = ?').run(req.params.id);
+  res.json({ message: 'Category deleted' });
+});
+
 // Dashboard Routes
 app.get('/api/dashboard/stats', authenticateToken, (req, res) => {
   const totalRevenue = db.prepare('SELECT COALESCE(SUM(total), 0) as total FROM sales').get().total;
