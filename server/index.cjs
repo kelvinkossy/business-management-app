@@ -218,6 +218,35 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Manual admin user creation endpoint (no authentication required for initial setup)
+app.post('/api/setup-admin', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+    
+    // Check if user already exists
+    const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+    
+    // Create admin user
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const result = db.prepare(
+      'INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)'
+    ).run(email, hashedPassword, name, 'admin');
+    
+    console.log('Admin user created manually:', email);
+    res.json({ message: 'Admin user created successfully', userId: result.lastInsertRowid });
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get current user
 app.get('/api/auth/me', authenticateToken, (req, res) => {
   const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(req.user.id);
