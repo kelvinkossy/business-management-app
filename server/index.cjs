@@ -161,31 +161,43 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    console.log('Login attempt for email:', email);
+    
     // Check rate limit
     if (!checkRateLimit(email)) {
+      console.log('Rate limit exceeded for:', email);
       return res.status(429).json({ error: 'Too many login attempts. Please try again in 15 minutes.' });
     }
     
     // Validate email format
     if (!email || !email.includes('@')) {
+      console.log('Invalid email format:', email);
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
     
     // Validate password
     if (!password || password.length < 1) {
+      console.log('Missing password');
       return res.status(400).json({ error: 'Please enter your password' });
     }
     
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) {
+      console.log('User not found for email:', email);
+      // List all users for debugging
+      const allUsers = db.prepare('SELECT email, name, role FROM users').all();
+      console.log('All users in database:', allUsers);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+
+    console.log('User found:', user.email, user.name, user.role);
 
     // For development, allow default admin with simple check
     // In production, always use bcrypt
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
+      console.log('Invalid password for:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -198,6 +210,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Clear login attempts on successful login
     loginAttempts.delete(email);
 
+    console.log('Login successful for:', email);
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
   } catch (error) {
     console.error('Login error:', error);
