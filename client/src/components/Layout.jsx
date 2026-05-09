@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import AIWidget from './AIWidget';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -167,6 +168,9 @@ const Layout = ({ children }) => {
 
         <main className="p-8">{children}</main>
       </div>
+
+      {/* AI Widget */}
+      <AIWidget />
     </div>
   );
 };
