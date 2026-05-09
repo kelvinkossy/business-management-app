@@ -62,7 +62,7 @@ const StockAllocation = () => {
   if (!isAdmin) return <div className="text-red-600">Access denied. Admin only.</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Stock Allocation</h1>
         <button

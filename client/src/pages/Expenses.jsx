@@ -156,7 +156,7 @@ const Expenses = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
         <button

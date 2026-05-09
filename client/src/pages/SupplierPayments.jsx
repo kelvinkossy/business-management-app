@@ -75,7 +75,7 @@ const SupplierPayments = () => {
   const totalBalance = summary.reduce((sum, s) => sum + s.current_balance, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center">
           <Truck className="w-8 h-8 mr-3" />

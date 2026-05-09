@@ -139,7 +139,7 @@ const Customers = () => {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
         <button
