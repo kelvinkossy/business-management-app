@@ -6,7 +6,6 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
-const OpenAI = require('openai');
 require('dotenv/config');
 
 const app = express();
@@ -1272,7 +1271,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
-// AI Query endpoint
+// AI Query endpoint - Local AI that learns from system data
 app.post('/api/ai/query', authenticateToken, async (req, res) => {
   try {
     const { query } = req.body;
@@ -1281,52 +1280,45 @@ app.post('/api/ai/query', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Query is required' });
     }
 
-    // Fetch system data to provide context to the AI
+    // Fetch all system data to build knowledge base
     const totalRevenue = db.prepare('SELECT COALESCE(SUM(total), 0) as total FROM sales').get().total;
     const totalExpenses = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM expenses').get().total;
     const totalSales = db.prepare('SELECT COUNT(*) as count FROM sales').get().count;
     const totalProducts = db.prepare('SELECT COUNT(*) as count FROM products').get().count;
     const lowStockProducts = db.prepare('SELECT name, quantity FROM products WHERE quantity < 10').all();
-    const recentSales = db.prepare('SELECT * FROM sales ORDER BY sale_date DESC LIMIT 5').all();
-    const recentExpenses = db.prepare('SELECT * FROM expenses ORDER BY expense_date DESC LIMIT 5').all();
+    const allProducts = db.prepare('SELECT name, sku, quantity, unit_price, cost_price FROM products').all();
+    const recentSales = db.prepare('SELECT * FROM sales ORDER BY sale_date DESC LIMIT 10').all();
+    const recentExpenses = db.prepare('SELECT * FROM expenses ORDER BY expense_date DESC LIMIT 10').all();
     const totalSavings = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM savings_transactions').get().total;
-    const suppliers = db.prepare('SELECT name, phone FROM suppliers').all();
+    const suppliers = db.prepare('SELECT name, phone, email FROM suppliers').all();
+    const customers = db.prepare('SELECT name, phone, email FROM customers').all();
+    const activityLogs = db.prepare('SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 20').all();
+    const savingsPlans = db.prepare('SELECT * FROM savings WHERE is_active = 1').all();
 
-    const systemContext = `
-You are an AI assistant for a business management system. Here is the current state of the business:
+    // Build knowledge base from system data
+    const knowledgeBase = {
+      business: {
+        totalRevenue,
+        totalExpenses,
+        profit: totalRevenue - totalExpenses - totalSavings,
+        totalSales,
+        totalProducts,
+        totalSavings,
+        totalSuppliers: suppliers.length,
+        totalCustomers: customers.length
+      },
+      products: allProducts,
+      lowStock: lowStockProducts,
+      sales: recentSales,
+      expenses: recentExpenses,
+      suppliers,
+      customers,
+      activities: activityLogs,
+      savings: savingsPlans
+    };
 
-Total Revenue: ₦${totalRevenue.toFixed(2)}
-Total Expenses: ₦${totalExpenses.toFixed(2)}
-Total Sales: ${totalSales}
-Total Products: ${totalProducts}
-Total Savings: ₦${totalSavings.toFixed(2)}
-
-Low Stock Products: ${lowStockProducts.map(p => `${p.name} (${p.quantity})`).join(', ') || 'None'}
-
-Recent Sales: ${recentSales.map(s => `Sale #${s.id} - ₦${s.total.toFixed(2)} on ${new Date(s.sale_date).toLocaleDateString()}`).join('; ')}
-
-Recent Expenses: ${recentExpenses.map(e => `${e.description} - ₦${e.amount.toFixed(2)} on ${new Date(e.expense_date).toLocaleDateString()}`).join('; ')}
-
-Suppliers: ${suppliers.map(s => s.name).join(', ')}
-
-Answer the user's question based on this data. Be helpful, concise, and specific. If the information is not available in the context, say so.
-    `;
-
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: systemContext },
-        { role: "user", content: query }
-      ],
-      max_tokens: 500,
-      temperature: 0.7
-    });
-
-    const answer = completion.choices[0].message.content;
+    // Process query using pattern matching and knowledge base
+    const answer = processQuery(query, knowledgeBase);
 
     // Log the AI query
     logActivity(req.user.id, 'ai_query', 'ai_assistant', null, { query, answer }, req.ip);
@@ -1334,20 +1326,82 @@ Answer the user's question based on this data. Be helpful, concise, and specific
     res.json({ answer });
   } catch (error) {
     console.error('AI Query Error:', error);
-    
-    // Fallback response if OpenAI API fails
-    const fallbackResponse = `I apologize, but I'm having trouble connecting to my AI service. Here's what I can tell you from your system data:
-
-- Total Revenue: ₦${db.prepare('SELECT COALESCE(SUM(total), 0) as total FROM sales').get().total.toFixed(2)}
-- Total Expenses: ₦${db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM expenses').get().total.toFixed(2)}
-- Total Sales: ${db.prepare('SELECT COUNT(*) as count FROM sales').get().count}
-- Total Products: ${db.prepare('SELECT COUNT(*) as count FROM products').get().count}
-
-Please check your OpenAI API key configuration or try again later.`;
-
-    res.json({ answer: fallbackResponse });
+    res.status(500).json({ error: error.message });
   }
 });
+
+// Local AI query processing function
+function processQuery(query, knowledgeBase) {
+  const lowerQuery = query.toLowerCase();
+  
+  // Revenue queries
+  if (lowerQuery.includes('revenue') || lowerQuery.includes('total sales') || lowerQuery.includes('income')) {
+    return `Your total revenue is ₦${knowledgeBase.business.totalRevenue.toFixed(2)} from ${knowledgeBase.business.totalSales} sales.`;
+  }
+  
+  // Expense queries
+  if (lowerQuery.includes('expense') || lowerQuery.includes('spent') || lowerQuery.includes('cost')) {
+    return `Your total expenses are ₦${knowledgeBase.business.totalExpenses.toFixed(2)}. Recent expenses include: ${knowledgeBase.expenses.slice(0, 3).map(e => `${e.description} (₦${e.amount.toFixed(2)})`).join(', ')}.`;
+  }
+  
+  // Profit queries
+  if (lowerQuery.includes('profit') || lowerQuery.includes('net') || lowerQuery.includes('earnings')) {
+    const profit = knowledgeBase.business.profit;
+    return `Your net profit is ₦${profit.toFixed(2)} (Revenue: ₦${knowledgeBase.business.totalRevenue.toFixed(2)} - Expenses: ₦${knowledgeBase.business.totalExpenses.toFixed(2)} - Savings: ₦${knowledgeBase.business.totalSavings.toFixed(2)}).`;
+  }
+  
+  // Low stock queries
+  if (lowerQuery.includes('low stock') || lowerQuery.includes('running low') || lowerQuery.includes('out of stock')) {
+    if (knowledgeBase.lowStock.length === 0) {
+      return `All products are well-stocked. No products are running low on stock.`;
+    }
+    return `Products running low on stock: ${knowledgeBase.lowStock.map(p => `${p.name} (${p.quantity} units)`).join(', ')}. You should restock these items soon.`;
+  }
+  
+  // Product queries
+  if (lowerQuery.includes('product') || lowerQuery.includes('inventory') || lowerQuery.includes('stock')) {
+    return `You have ${knowledgeBase.business.totalProducts} products in your inventory. Your products include: ${knowledgeBase.products.slice(0, 5).map(p => p.name).join(', ')}${knowledgeBase.products.length > 5 ? ', and more...' : '.'}`;
+  }
+  
+  // Supplier queries
+  if (lowerQuery.includes('supplier') || lowerQuery.includes('vendor')) {
+    return `You have ${knowledgeBase.business.totalSuppliers} suppliers: ${knowledgeBase.suppliers.map(s => s.name).join(', ')}.`;
+  }
+  
+  // Customer queries
+  if (lowerQuery.includes('customer') || lowerQuery.includes('client')) {
+    return `You have ${knowledgeBase.business.totalCustomers} customers: ${knowledgeBase.customers.map(c => c.name).join(', ')}.`;
+  }
+  
+  // Savings queries
+  if (lowerQuery.includes('saving') || lowerQuery.includes('save')) {
+    return `You have ${knowledgeBase.savings.length} active savings plans with total savings of ₦${knowledgeBase.business.totalSavings.toFixed(2)}. Savings plans: ${knowledgeBase.savings.map(s => `${s.name} (₦${s.amount})`).join(', ')}.`;
+  }
+  
+  // Recent activity queries
+  if (lowerQuery.includes('activity') || lowerQuery.includes('recent') || lowerQuery.includes('what happened')) {
+    const recentActivities = knowledgeBase.activities.slice(0, 5);
+    return `Recent activities: ${recentActivities.map(a => `${a.action} ${a.entity_type} ${a.entity_id || ''}`).join(', ')}.`;
+  }
+  
+  // Sales queries
+  if (lowerQuery.includes('sale') || lowerQuery.includes('sold')) {
+    const recentSales = knowledgeBase.sales.slice(0, 3);
+    return `You've made ${knowledgeBase.business.totalSales} sales totaling ₦${knowledgeBase.business.totalRevenue.toFixed(2)}. Recent sales: ${recentSales.map(s => `Sale #${s.id} - ₦${s.total.toFixed(2)}`).join(', ')}.`;
+  }
+  
+  // Default response
+  return `I understand you're asking about "${query}". Based on your system data, I can tell you:
+- Total Revenue: ₦${knowledgeBase.business.totalRevenue.toFixed(2)}
+- Total Expenses: ₦${knowledgeBase.business.totalExpenses.toFixed(2)}
+- Net Profit: ₦${knowledgeBase.business.profit.toFixed(2)}
+- Total Products: ${knowledgeBase.business.totalProducts}
+- Total Sales: ${knowledgeBase.business.totalSales}
+- Suppliers: ${knowledgeBase.business.totalSuppliers}
+- Customers: ${knowledgeBase.business.totalCustomers}
+
+You can ask me specifically about sales, expenses, products, suppliers, customers, savings, or recent activities.`;
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
