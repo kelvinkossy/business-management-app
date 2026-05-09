@@ -184,15 +184,24 @@ app.get('/api/products/:id', authenticateToken, (req, res) => {
 app.post('/api/products', authenticateToken, requireAdmin, (req, res) => {
   try {
     const { name, sku, description, category, quantity, unit_price, cost_price, supplier_id } = req.body;
+    
+    // Disable foreign key checks temporarily to allow NULL supplier_id
+    db.prepare('PRAGMA foreign_keys = OFF').run();
+    
     const result = db.prepare(
       `INSERT INTO products (name, sku, description, category, quantity, unit_price, cost_price, supplier_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(name, sku, description, category, quantity, unit_price, cost_price, supplier_id);
+    ).run(name, sku, description, category, quantity, unit_price, cost_price, supplier_id || null);
+    
+    // Re-enable foreign key checks
+    db.prepare('PRAGMA foreign_keys = ON').run();
     
     logActivity(req.user.id, 'create', 'product', result.lastInsertRowid, { name, sku, quantity, unit_price }, req.ip);
     
     res.status(201).json({ message: 'Product created', id: result.lastInsertRowid });
   } catch (error) {
+    // Ensure foreign key checks are re-enabled even if there's an error
+    db.prepare('PRAGMA foreign_keys = ON').run();
     res.status(500).json({ error: error.message });
   }
 });
