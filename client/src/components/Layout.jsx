@@ -102,18 +102,19 @@ const Layout = ({ children }) => {
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            {navigation.map((item) => {
+            {navigation.map((item, index) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.name}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 ${
+                  className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 animate-slide-in ${
                     isActive(item.href)
                       ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:shadow-md'
                   }`}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   <span className="font-medium">{item.name}</span>
