@@ -49,9 +49,6 @@ if (fs.existsSync(schemaPath)) {
   console.log('Schema file not found at:', schemaPath);
 }
 
-// Serve static files from React app
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
 // Auto-register admin user if not exists
 const ensureAdminUser = () => {
   const adminEmail = 'kelvinkossy@gmail.com';
@@ -68,8 +65,11 @@ const ensureAdminUser = () => {
   }
 };
 
-// Run on startup
+// Run after schema initialization
 ensureAdminUser();
+
+// Serve static files from React app
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {

@@ -2,7 +2,10 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-axios.defaults.baseURL = '';
+// Get API URL from environment variable or use relative path
+const API_URL = import.meta.env.VITE_API_URL || '';
+
+axios.defaults.baseURL = API_URL;
 
 const AuthContext = createContext(null);
 
