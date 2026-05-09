@@ -166,9 +166,19 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(429).json({ error: 'Too many login attempts. Please try again in 15 minutes.' });
     }
     
+    // Validate email format
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+    
+    // Validate password
+    if (!password || password.length < 1) {
+      return res.status(400).json({ error: 'Please enter your password' });
+    }
+    
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // For development, allow default admin with simple check
@@ -176,7 +186,7 @@ app.post('/api/auth/login', async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const token = jwt.sign(
@@ -190,7 +200,8 @@ app.post('/api/auth/login', async (req, res) => {
 
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed. Please try again later.' });
   }
 });
 

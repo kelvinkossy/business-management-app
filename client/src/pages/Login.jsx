@@ -39,7 +39,22 @@ const Login = () => {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      const errorMessage = err.response?.data?.error || 'Login failed';
+      
+      // Provide more helpful error messages
+      if (errorMessage.includes('Too many login attempts')) {
+        setError(errorMessage);
+      } else if (errorMessage.includes('valid email')) {
+        setError('Please enter a valid email address');
+      } else if (errorMessage.includes('password')) {
+        setError('Please enter your password');
+      } else if (errorMessage.includes('Invalid email or password')) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        setError('Network error. Please check your internet connection and try again.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
