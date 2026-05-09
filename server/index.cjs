@@ -1158,7 +1158,7 @@ app.post('/api/supplier-payments', authenticateToken, (req, res) => {
     `).get(supplier_id) || { balance: 0 };
     
     let newBalance = currentBalance.balance;
-    let status = 'completed';
+    let status = 'paid';
     
     if (type === 'payment') {
       newBalance -= amount;
@@ -1214,8 +1214,8 @@ app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
     
     console.log(`Current payment status: ${payment.status}, type: ${payment.type}`);
     
-    // Only create expense if status is being changed to 'paid' or 'completed' and type is 'payment'
-    if ((status === 'paid' || status === 'completed') && payment.status !== status && payment.type === 'payment') {
+    // Only create expense if status is being changed to 'paid' and type is 'payment'
+    if (status === 'paid' && payment.status !== status && payment.type === 'payment') {
       console.log(`Creating expense record for payment ${payment.id}`);
       const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(payment.supplier_id);
       if (supplier) {
