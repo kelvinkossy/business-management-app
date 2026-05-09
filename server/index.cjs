@@ -49,20 +49,31 @@ if (fs.existsSync(schemaPath)) {
   console.log('Schema file not found at:', schemaPath);
 }
 
-// Auto-register admin user if not exists
+// Auto-register admin users if not exists
 const ensureAdminUser = () => {
-  const adminEmail = 'kelvinkossy@gmail.com';
-  const adminPassword = 'Kechi0302';
-  const adminName = 'Admin User';
+  const adminUsers = [
+    {
+      email: 'kelvinkossy@gmail.com',
+      password: 'Kechi0302',
+      name: 'Admin User'
+    },
+    {
+      email: 'villagekitchen@gmail.com',
+      password: 'villagekitchenandbarcalabar',
+      name: 'Village Kitchen Admin'
+    }
+  ];
 
-  const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail);
-  if (!existingAdmin) {
-    const hashedPassword = bcrypt.hashSync(adminPassword, 10);
-    db.prepare('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)').run(
-      adminEmail, hashedPassword, adminName, 'admin'
-    );
-    console.log('Admin user auto-registered');
-  }
+  adminUsers.forEach(admin => {
+    const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get(admin.email);
+    if (!existingAdmin) {
+      const hashedPassword = bcrypt.hashSync(admin.password, 10);
+      db.prepare('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)').run(
+        admin.email, hashedPassword, admin.name, 'admin'
+      );
+      console.log(`Admin user auto-registered: ${admin.email}`);
+    }
+  });
 };
 
 // Run after schema initialization
@@ -122,9 +133,38 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+// Rate limiting for login attempts
+const loginAttempts = new Map(); // Store login attempts: { email: { count: number, lastAttempt: timestamp } }
+
+const checkRateLimit = (email) => {
+  const now = Date.now();
+  const attempts = loginAttempts.get(email) || { count: 0, lastAttempt: 0 };
+  
+  // Reset if 15 minutes have passed since last attempt
+  if (now - attempts.lastAttempt > 15 * 60 * 1000) {
+    attempts.count = 0;
+  }
+  
+  attempts.lastAttempt = now;
+  
+  // Allow max 5 attempts per 15 minutes
+  if (attempts.count >= 5) {
+    return false;
+  }
+  
+  attempts.count++;
+  loginAttempts.set(email, attempts);
+  return true;
+};
+
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // Check rate limit
+    if (!checkRateLimit(email)) {
+      return res.status(429).json({ error: 'Too many login attempts. Please try again in 15 minutes.' });
+    }
     
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) {
@@ -144,6 +184,9 @@ app.post('/api/auth/login', async (req, res) => {
       JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    // Clear login attempts on successful login
+    loginAttempts.delete(email);
 
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
   } catch (error) {
