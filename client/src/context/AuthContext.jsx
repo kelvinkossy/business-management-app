@@ -2,10 +2,10 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// Get API URL from environment variable or use relative path
-const API_URL = import.meta.env.VITE_API_URL || '';
-
-axios.defaults.baseURL = API_URL;
+// Configure axios to use relative URLs for same-origin requests
+// This works both in development and production
+axios.defaults.baseURL = '';
+axios.defaults.withCredentials = false;
 
 const AuthContext = createContext(null);
 
