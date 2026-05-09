@@ -18,7 +18,8 @@ import {
   TrendingUp,
   BookOpen,
   CreditCard,
-  PiggyBank
+  PiggyBank,
+  Bot
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -58,6 +59,7 @@ const Layout = ({ children }) => {
     { name: 'Business Reports', href: '/reports', icon: FileText },
     { name: 'Debt Book', href: '/debt-book', icon: BookOpen },
     { name: 'Supplier Payments', href: '/supplier-payments', icon: CreditCard },
+    { name: 'AI Assistant', href: '/ai-assistant', icon: Bot },
     ...(user?.role === 'admin' ? [
       { name: 'Staff Management', href: '/staff', icon: UserCog },
       { name: 'Stock Allocation', href: '/allocations', icon: ArrowRightLeft },

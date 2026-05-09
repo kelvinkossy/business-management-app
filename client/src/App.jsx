@@ -17,6 +17,7 @@ import StaffSales from './pages/StaffSales';
 import DebtBook from './pages/DebtBook';
 import SupplierPayments from './pages/SupplierPayments';
 import Savings from './pages/Savings';
+import AIAssistant from './pages/AIAssistant';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -73,6 +74,7 @@ function App() {
                     <Route path="/my-sales" element={<ProtectedRoute><StaffSales /></ProtectedRoute>} />
                     <Route path="/debt-book" element={<ProtectedRoute><DebtBook /></ProtectedRoute>} />
                     <Route path="/supplier-payments" element={<ProtectedRoute><SupplierPayments /></ProtectedRoute>} />
+                    <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

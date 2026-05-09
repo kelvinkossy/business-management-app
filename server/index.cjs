@@ -6,6 +6,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
+const OpenAI = require('openai');
 require('dotenv/config');
 
 const app = express();
@@ -14,6 +15,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 
 app.use(cors());
 app.use(express.json());
+
+// Helper function to log activities
+const logActivity = (userId, action, entityType, entityId, details, ipAddress) => {
+  try {
+    db.prepare(
+      `INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, ip_address)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(userId, action, entityType, entityId, JSON.stringify(details), ipAddress);
+  } catch (error) {
+    console.error('Error logging activity:', error);
+  }
+};
 
 // Ensure database directory exists
 const dbDir = path.join(__dirname, 'database');
@@ -176,6 +189,9 @@ app.post('/api/products', authenticateToken, requireAdmin, (req, res) => {
       `INSERT INTO products (name, sku, description, category, quantity, unit_price, cost_price, supplier_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(name, sku, description, category, quantity, unit_price, cost_price, supplier_id);
+    
+    logActivity(req.user.id, 'create', 'product', result.lastInsertRowid, { name, sku, quantity, unit_price }, req.ip);
+    
     res.status(201).json({ message: 'Product created', id: result.lastInsertRowid });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1254,6 +1270,83 @@ app.put('/api/supplier-payments/:id/status', authenticateToken, (req, res) => {
 // Catch-all route to serve React app for client-side routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
+// AI Query endpoint
+app.post('/api/ai/query', authenticateToken, async (req, res) => {
+  try {
+    const { query } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Query is required' });
+    }
+
+    // Fetch system data to provide context to the AI
+    const totalRevenue = db.prepare('SELECT COALESCE(SUM(total), 0) as total FROM sales').get().total;
+    const totalExpenses = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM expenses').get().total;
+    const totalSales = db.prepare('SELECT COUNT(*) as count FROM sales').get().count;
+    const totalProducts = db.prepare('SELECT COUNT(*) as count FROM products').get().count;
+    const lowStockProducts = db.prepare('SELECT name, quantity FROM products WHERE quantity < 10').all();
+    const recentSales = db.prepare('SELECT * FROM sales ORDER BY sale_date DESC LIMIT 5').all();
+    const recentExpenses = db.prepare('SELECT * FROM expenses ORDER BY expense_date DESC LIMIT 5').all();
+    const totalSavings = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM savings_transactions').get().total;
+    const suppliers = db.prepare('SELECT name, phone FROM suppliers').all();
+
+    const systemContext = `
+You are an AI assistant for a business management system. Here is the current state of the business:
+
+Total Revenue: ₦${totalRevenue.toFixed(2)}
+Total Expenses: ₦${totalExpenses.toFixed(2)}
+Total Sales: ${totalSales}
+Total Products: ${totalProducts}
+Total Savings: ₦${totalSavings.toFixed(2)}
+
+Low Stock Products: ${lowStockProducts.map(p => `${p.name} (${p.quantity})`).join(', ') || 'None'}
+
+Recent Sales: ${recentSales.map(s => `Sale #${s.id} - ₦${s.total.toFixed(2)} on ${new Date(s.sale_date).toLocaleDateString()}`).join('; ')}
+
+Recent Expenses: ${recentExpenses.map(e => `${e.description} - ₦${e.amount.toFixed(2)} on ${new Date(e.expense_date).toLocaleDateString()}`).join('; ')}
+
+Suppliers: ${suppliers.map(s => s.name).join(', ')}
+
+Answer the user's question based on this data. Be helpful, concise, and specific. If the information is not available in the context, say so.
+    `;
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemContext },
+        { role: "user", content: query }
+      ],
+      max_tokens: 500,
+      temperature: 0.7
+    });
+
+    const answer = completion.choices[0].message.content;
+
+    // Log the AI query
+    logActivity(req.user.id, 'ai_query', 'ai_assistant', null, { query, answer }, req.ip);
+
+    res.json({ answer });
+  } catch (error) {
+    console.error('AI Query Error:', error);
+    
+    // Fallback response if OpenAI API fails
+    const fallbackResponse = `I apologize, but I'm having trouble connecting to my AI service. Here's what I can tell you from your system data:
+
+- Total Revenue: ₦${db.prepare('SELECT COALESCE(SUM(total), 0) as total FROM sales').get().total.toFixed(2)}
+- Total Expenses: ₦${db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM expenses').get().total.toFixed(2)}
+- Total Sales: ${db.prepare('SELECT COUNT(*) as count FROM sales').get().count}
+- Total Products: ${db.prepare('SELECT COUNT(*) as count FROM products').get().count}
+
+Please check your OpenAI API key configuration or try again later.`;
+
+    res.json({ answer: fallbackResponse });
+  }
 });
 
 app.listen(PORT, () => {

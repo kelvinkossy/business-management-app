@@ -226,6 +226,19 @@ CREATE TABLE IF NOT EXISTS savings_transactions (
   FOREIGN KEY (sale_id) REFERENCES sales(id)
 );
 
+-- Activity Logs table to track all system activities
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER,
+  details TEXT,
+  ip_address TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Insert default admin user (password: admin123)
 INSERT OR IGNORE INTO users (email, password, name, role)
 VALUES ('admin@business.com', '$2a$10$XQwZzWzZzZzZzZzZzZzO', 'Admin User', 'admin');
