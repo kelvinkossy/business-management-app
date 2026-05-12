@@ -49,8 +49,9 @@ if (fs.existsSync(schemaPath)) {
   console.log('Schema file not found at:', schemaPath);
 }
 
-// Auto-register admin users if not exists
+// Auto-register admin users if not exists (runs on every startup)
 const ensureAdminUser = () => {
+  console.log('Checking for admin users...');
   const adminUsers = [
     {
       email: 'kelvinkossy@gmail.com',
@@ -72,8 +73,14 @@ const ensureAdminUser = () => {
         admin.email, hashedPassword, admin.name, 'admin'
       );
       console.log(`Admin user auto-registered: ${admin.email}`);
+    } else {
+      console.log(`Admin user already exists: ${admin.email}`);
     }
   });
+  
+  // List all users for verification
+  const allUsers = db.prepare('SELECT email, name, role FROM users').all();
+  console.log('Current users in database:', allUsers);
 };
 
 // Run after schema initialization
