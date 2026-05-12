@@ -683,20 +683,31 @@ app.get('/api/dashboard/stats', authenticateToken, (req, res) => {
   const totalSales = db.prepare('SELECT COUNT(*) as count FROM sales').get().count;
   const lowStockProducts = db.prepare('SELECT COUNT(*) as count FROM products WHERE quantity < 10').get().count;
 
+  // Include customer debt payments in revenue
+  const customerDebtPayments = db.prepare(`
+    SELECT COALESCE(SUM(amount), 0) as total 
+    FROM customer_debts 
+    WHERE type = 'payment'
+  `).get().total;
+
+  // Total revenue including debt payments
+  const totalRevenueWithPayments = totalRevenue + customerDebtPayments;
+
   // Savings statistics
   const totalSavingsDeducted = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM savings_transactions').get().total;
   const activeSavings = db.prepare('SELECT COUNT(*) as count FROM savings WHERE is_active = 1').get().count;
 
-  const profit = totalRevenue - totalExpenses - totalSavingsDeducted;
+  const profit = totalRevenueWithPayments - totalExpenses - totalSavingsDeducted;
 
   res.json({
-    totalRevenue,
+    totalRevenue: totalRevenueWithPayments,
     totalExpenses,
     totalSavingsDeducted,
     totalSales,
     lowStockProducts,
     activeSavings,
-    profit
+    profit,
+    customerDebtPayments
   });
 });
 
