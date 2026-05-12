@@ -247,6 +247,16 @@ app.post('/api/setup-admin', async (req, res) => {
   }
 });
 
+// List all users (for debugging - no auth required)
+app.get('/api/debug/users', (req, res) => {
+  try {
+    const users = db.prepare('SELECT id, email, name, role FROM users').all();
+    res.json({ users, count: users.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get current user
 app.get('/api/auth/me', authenticateToken, (req, res) => {
   const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(req.user.id);
