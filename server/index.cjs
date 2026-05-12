@@ -191,14 +191,15 @@ app.post('/api/auth/login', async (req, res) => {
     let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     
     // Auto-create admin user if it doesn't exist (for Render ephemeral database)
+    // This is more aggressive - creates user if email matches admin email, regardless of password
     const adminCredentials = [
       { email: 'kelvinkossy@gmail.com', password: 'Kechi0302', name: 'Admin User' },
       { email: 'villagekitchen@gmail.com', password: 'villagekitchenandbarcalabar', name: 'Village Kitchen Admin' }
     ];
     
     const adminUser = adminCredentials.find(admin => admin.email === email);
-    if (!user && adminUser && password === adminUser.password) {
-      console.log('Auto-creating admin user for:', email);
+    if (!user && adminUser) {
+      console.log('Auto-creating admin user for:', email, '(user not found in database)');
       const hashedPassword = bcrypt.hashSync(adminUser.password, 10);
       const result = db.prepare(
         'INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)'
