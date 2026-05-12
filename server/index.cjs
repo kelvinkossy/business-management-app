@@ -287,7 +287,7 @@ app.post('/api/products', authenticateToken, requireAdmin, (req, res) => {
     const result = db.prepare(
       `INSERT INTO products (name, sku, description, category, quantity, unit_price, cost_price, supplier_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(name, sku, description, category, quantity, unit_price, cost_price, supplier_id || null);
+    ).run(name, sku, description, category, quantity, unit_price || null, cost_price || null, supplier_id || null);
     
     // Re-enable foreign key checks
     db.prepare('PRAGMA foreign_keys = ON').run();

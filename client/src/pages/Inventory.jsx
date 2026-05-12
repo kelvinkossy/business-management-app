@@ -20,7 +20,7 @@ const Inventory = () => {
   // Calculate inventory stats
   const totalProducts = products.length;
   const lowStockCount = products.filter(p => p.quantity < 10).length;
-  const totalStockValue = products.reduce((sum, p) => sum + (p.quantity * p.unit_price), 0);
+  const totalStockValue = products.reduce((sum, p) => sum + (p.quantity * (p.unit_price || 0)), 0);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -54,26 +54,8 @@ const Inventory = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Form validation
-    if (!formData.name.trim()) {
-      toast.error('Product name is required');
-      return;
-    }
-    if (!formData.sku.trim()) {
-      toast.error('SKU is required');
-      return;
-    }
-    if (formData.quantity < 0) {
-      toast.error('Quantity must be a positive number');
-      return;
-    }
-    if (formData.unit_price <= 0) {
-      toast.error('Unit price must be greater than 0');
-      return;
-    }
-    if (formData.cost_price < 0) {
-      toast.error('Cost price must be a positive number');
+    if (!formData.name || !formData.sku) {
+      toast.error('Name and SKU are required');
       return;
     }
 
@@ -87,16 +69,7 @@ const Inventory = () => {
       }
       setShowModal(false);
       setEditingProduct(null);
-      setFormData({
-        name: '',
-        sku: '',
-        description: '',
-        category: '',
-        quantity: 0,
-        unit_price: 0,
-        cost_price: 0,
-        supplier_id: ''
-      });
+      setFormData({ name: '', sku: '', description: '', category: '', quantity: 0, unit_price: '', cost_price: '', supplier_id: '' });
       fetchData();
     } catch (error) {
       console.error('Error saving product:', error);
@@ -228,7 +201,7 @@ const Inventory = () => {
                 className="px-4 py-3 hover:bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer transition-colors border-b border-gray-100 last:border-0"
               >
                 <div className="font-medium text-gray-900">{product.name}</div>
-                <div className="text-sm text-gray-500">{product.sku} - ₦{product.unit_price.toFixed(2)}</div>
+                <div className="text-sm text-gray-500">{product.sku} - {product.unit_price ? `₦${product.unit_price.toFixed(2)}` : 'No price'}</div>
               </div>
             ))}
             {filteredProducts.length === 0 && (
@@ -296,7 +269,7 @@ const Inventory = () => {
                     {product.quantity}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-gray-900">₦{product.unit_price.toFixed(2)}</td>
+                <td className="px-6 py-4 text-gray-900">{product.unit_price ? `₦${product.unit_price.toFixed(2)}` : '-'}</td>
                 <td className="px-6 py-4 text-gray-600">{product.supplier_name || '-'}</td>
                 {isAdmin && (
                   <td className="px-6 py-4">
@@ -389,9 +362,9 @@ const Inventory = () => {
                     type="number"
                     step="0.01"
                     value={formData.unit_price}
-                    onChange={(e) => setFormData({ ...formData, unit_price: parseFloat(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
-                    required
+                    placeholder="Optional"
                   />
                 </div>
                 <div>
@@ -400,9 +373,9 @@ const Inventory = () => {
                     type="number"
                     step="0.01"
                     value={formData.cost_price}
-                    onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
-                    required
+                    placeholder="Optional"
                   />
                 </div>
               </div>

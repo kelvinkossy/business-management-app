@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   category TEXT,
   quantity INTEGER DEFAULT 0,
-  unit_price REAL NOT NULL,
-  cost_price REAL NOT NULL,
+  unit_price REAL,
+  cost_price REAL,
   supplier_id INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS sale_items (
   product_id INTEGER,
   product_name TEXT NOT NULL,
   quantity INTEGER NOT NULL,
-  unit_price REAL NOT NULL,
+  unit_price REAL,
   total REAL NOT NULL,
   FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id)
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS manual_sale_items (
   sale_id INTEGER NOT NULL,
   item_name TEXT NOT NULL,
   quantity INTEGER NOT NULL,
-  unit_price REAL NOT NULL,
+  unit_price REAL,
   total REAL NOT NULL,
   FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE
 );
@@ -184,14 +184,14 @@ CREATE TABLE IF NOT EXISTS staff_allocations (
   FOREIGN KEY (allocated_by) REFERENCES users(id)
 );
 
--- Staff Sales table (for sales made by staff from allocated stock)
+-- Staff sales table (for tracking sales made by staff)
 CREATE TABLE IF NOT EXISTS staff_sales (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  staff_id INTEGER NOT NULL,
-  allocation_id INTEGER NOT NULL,
+  staff_id INTEGER,
+  allocation_id INTEGER,
   product_id INTEGER NOT NULL,
   quantity_sold INTEGER NOT NULL,
-  unit_price REAL NOT NULL,
+  unit_price REAL,
   total REAL NOT NULL,
   sale_date DATETIME DEFAULT CURRENT_TIMESTAMP,
   notes TEXT,
