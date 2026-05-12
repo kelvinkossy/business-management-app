@@ -357,25 +357,25 @@ const Inventory = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Unit Price</label>
+                  <label className="block text-sm font-medium mb-1">Unit Price (Optional)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.unit_price}
                     onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
-                    placeholder="Optional"
+                    placeholder="Leave empty if not applicable"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Cost Price</label>
+                  <label className="block text-sm font-medium mb-1">Cost Price (Optional)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.cost_price}
                     onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
-                    placeholder="Optional"
+                    placeholder="Leave empty if not applicable"
                   />
                 </div>
               </div>
