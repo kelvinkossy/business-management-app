@@ -188,7 +188,25 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Please enter your password' });
     }
     
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    
+    // Auto-create admin user if it doesn't exist (for Render ephemeral database)
+    const adminCredentials = [
+      { email: 'kelvinkossy@gmail.com', password: 'Kechi0302', name: 'Admin User' },
+      { email: 'villagekitchen@gmail.com', password: 'villagekitchenandbarcalabar', name: 'Village Kitchen Admin' }
+    ];
+    
+    const adminUser = adminCredentials.find(admin => admin.email === email);
+    if (!user && adminUser && password === adminUser.password) {
+      console.log('Auto-creating admin user for:', email);
+      const hashedPassword = bcrypt.hashSync(adminUser.password, 10);
+      const result = db.prepare(
+        'INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)'
+      ).run(email, hashedPassword, adminUser.name, 'admin');
+      user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+      console.log('Admin user auto-created:', email);
+    }
+    
     if (!user) {
       console.log('User not found for email:', email);
       // List all users for debugging
