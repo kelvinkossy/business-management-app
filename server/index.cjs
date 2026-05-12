@@ -918,6 +918,97 @@ app.get('/api/reports/sales-by-category', authenticateToken, (req, res) => {
   res.json(sales);
 });
 
+// Sales grouped by day
+app.get('/api/reports/sales-by-day', authenticateToken, (req, res) => {
+  const { start_date, end_date } = req.query;
+  
+  let query = `
+    SELECT 
+      DATE(sale_date) as date,
+      COUNT(*) as total_transactions,
+      SUM(total) as total_sales,
+      SUM(quantity) as total_quantity,
+      AVG(total) as avg_transaction_value
+    FROM sales
+  `;
+  let params = [];
+  
+  if (start_date && end_date) {
+    query += ' WHERE sale_date BETWEEN ? AND ?';
+    params.push(start_date, end_date);
+  }
+  
+  query += ' GROUP BY DATE(sale_date) ORDER BY date DESC';
+  
+  const sales = db.prepare(query).all(...params);
+  res.json(sales);
+});
+
+// Comprehensive business metrics
+app.get('/api/reports/metrics', authenticateToken, (req, res) => {
+  const { start_date, end_date } = req.query;
+  
+  let dateFilter = '';
+  let params = [];
+  
+  if (start_date && end_date) {
+    dateFilter = ' WHERE sale_date BETWEEN ? AND ?';
+    params.push(start_date, end_date);
+  }
+  
+  // Total revenue
+  const totalRevenue = db.prepare(`SELECT COALESCE(SUM(total), 0) as total FROM sales${dateFilter}`).get(...params).total;
+  
+  // Total expenses
+  const totalExpenses = db.prepare(`SELECT COALESCE(SUM(amount), 0) as total FROM expenses${dateFilter ? ' WHERE expense_date BETWEEN ? AND ?' : ''}`).get(...(dateFilter ? params : [])).total;
+  
+  // Total sales count
+  const totalSalesCount = db.prepare(`SELECT COUNT(*) as total FROM sales${dateFilter}`).get(...params).total;
+  
+  // Average order value
+  const avgOrderValue = db.prepare(`SELECT COALESCE(AVG(total), 0) as avg FROM sales${dateFilter}`).get(...params).avg;
+  
+  // Best selling product
+  const bestProduct = db.prepare(`
+    SELECT p.name, SUM(si.quantity) as total_sold, SUM(si.total) as total_revenue
+    FROM sale_items si
+    JOIN products p ON si.product_id = p.id
+    JOIN sales s ON si.sale_id = s.id
+    ${dateFilter ? 'WHERE s.sale_date BETWEEN ? AND ?' : ''}
+    GROUP BY p.id, p.name
+    ORDER BY total_sold DESC
+    LIMIT 1
+  `).get(...(dateFilter ? params : [])) || { name: 'N/A', total_sold: 0, total_revenue: 0 };
+  
+  // Low stock products
+  const lowStockCount = db.prepare(`SELECT COUNT(*) as total FROM products WHERE quantity < 10`).get().total;
+  
+  // Total products
+  const totalProducts = db.prepare(`SELECT COUNT(*) as total FROM products`).get().total;
+  
+  // Total customers
+  const totalCustomers = db.prepare(`SELECT COUNT(*) as total FROM customers`).get().total;
+  
+  // Total suppliers
+  const totalSuppliers = db.prepare(`SELECT COUNT(*) as total FROM suppliers`).get().total;
+  
+  // Profit
+  const profit = totalRevenue - totalExpenses;
+  
+  res.json({
+    totalRevenue,
+    totalExpenses,
+    profit,
+    totalSalesCount,
+    avgOrderValue,
+    bestProduct,
+    lowStockCount,
+    totalProducts,
+    totalCustomers,
+    totalSuppliers
+  });
+});
+
 // Initialize admin user with proper password hash
 app.post('/api/auth/init-admin', async (req, res) => {
   try {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, Download } from 'lucide-react';
+import { Calendar, Download, TrendingUp, DollarSign, ShoppingCart, Package, Users, Truck, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -10,6 +10,8 @@ const Reports = () => {
   const [profitLossData, setProfitLossData] = useState(null);
   const [inventoryData, setInventoryData] = useState([]);
   const [salesByCategory, setSalesByCategory] = useState([]);
+  const [salesByDay, setSalesByDay] = useState([]);
+  const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -30,14 +32,18 @@ const Reports = () => {
 
   const fetchReports = async () => {
     try {
-      const [profitLossRes, inventoryRes, categoryRes] = await Promise.all([
+      const [profitLossRes, inventoryRes, categoryRes, salesByDayRes, metricsRes] = await Promise.all([
         axios.get(`/api/reports/profit-loss?start_date=${startDate}&end_date=${endDate}`),
         axios.get('/api/reports/inventory'),
-        axios.get('/api/reports/sales-by-category')
+        axios.get('/api/reports/sales-by-category'),
+        axios.get(`/api/reports/sales-by-day?start_date=${startDate}&end_date=${endDate}`),
+        axios.get(`/api/reports/metrics?start_date=${startDate}&end_date=${endDate}`)
       ]);
       setProfitLossData(profitLossRes.data);
       setInventoryData(inventoryRes.data);
       setSalesByCategory(categoryRes.data);
+      setSalesByDay(salesByDayRes.data);
+      setMetrics(metricsRes.data);
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast.error('Failed to load reports');
@@ -84,7 +90,7 @@ const Reports = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
+      <h1 className="text-3xl font-bold text-gray-900">Business Reports</h1>
 
       {/* Date Filter */}
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -110,6 +116,162 @@ const Reports = () => {
               />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Key Metrics Cards */}
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Total Revenue</p>
+                <p className="text-2xl font-bold mt-1">₦{metrics.totalRevenue?.toFixed(2)}</p>
+              </div>
+              <DollarSign className="w-8 h-8 text-blue-200" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm">Total Profit</p>
+                <p className="text-2xl font-bold mt-1">₦{metrics.profit?.toFixed(2)}</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-green-200" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm">Total Sales</p>
+                <p className="text-2xl font-bold mt-1">{metrics.totalSalesCount}</p>
+              </div>
+              <ShoppingCart className="w-8 h-8 text-purple-200" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm">Avg Order Value</p>
+                <p className="text-2xl font-bold mt-1">₦{metrics.avgOrderValue?.toFixed(2)}</p>
+              </div>
+              <Package className="w-8 h-8 text-orange-200" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Additional Metrics */}
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Total Products</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">{metrics.totalProducts}</p>
+              </div>
+              <Package className="w-6 h-6 text-blue-500" />
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Total Customers</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">{metrics.totalCustomers}</p>
+              </div>
+              <Users className="w-6 h-6 text-green-500" />
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Total Suppliers</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">{metrics.totalSuppliers}</p>
+              </div>
+              <Truck className="w-6 h-6 text-purple-500" />
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Low Stock Items</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">{metrics.lowStockCount}</p>
+              </div>
+              <AlertCircle className="w-6 h-6 text-red-500" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Best Selling Product */}
+      {metrics && metrics.bestProduct && (
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Best Selling Product</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{metrics.bestProduct.name}</p>
+              <p className="text-gray-600">{metrics.bestProduct.total_sold} units sold</p>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-semibold text-green-600">₦{metrics.bestProduct.total_revenue?.toFixed(2)}</p>
+              <p className="text-sm text-gray-500">Total Revenue</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sales by Day Chart */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Sales by Day</h2>
+          <button
+            onClick={() => exportToCSV(salesByDay, 'sales-by-day')}
+            className="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </button>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={salesByDay}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="total_sales" stroke="#3b82f6" name="Total Sales" strokeWidth={2} />
+            <Line type="monotone" dataKey="total_transactions" stroke="#10b981" name="Transactions" strokeWidth={2} />
+            <Line type="monotone" dataKey="avg_transaction_value" stroke="#f59e0b" name="Avg Transaction" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Sales by Day Table */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="text-lg font-semibold mb-4">Daily Sales Details</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transactions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Sales</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Transaction</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {salesByDay.map((day, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium">{day.date}</td>
+                  <td className="px-6 py-4">{day.total_transactions}</td>
+                  <td className="px-6 py-4 font-semibold text-green-600">₦{day.total_sales?.toFixed(2)}</td>
+                  <td className="px-6 py-4">{day.total_quantity}</td>
+                  <td className="px-6 py-4 text-gray-600">₦{day.avg_transaction_value?.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
