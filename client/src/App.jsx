@@ -5,31 +5,22 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Sales from './pages/Sales';
-import Expenses from './pages/Expenses';
 import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
+import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
-import ExpenseReports from './pages/ExpenseReports';
-import Settings from './pages/Settings';
 import StaffManagement from './pages/StaffManagement';
 import StockAllocation from './pages/StockAllocation';
 import StaffSales from './pages/StaffSales';
+import Settings from './pages/Settings';
 import DebtBook from './pages/DebtBook';
 import SupplierPayments from './pages/SupplierPayments';
+import ExpenseReports from './pages/ExpenseReports';
 import Savings from './pages/Savings';
 
+// Temporary: Bypass authentication
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-  
-  return children;
+  return children; // Allow access without authentication
 };
 
 const AdminRoute = ({ children }) => {
@@ -51,33 +42,33 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          {/* Temporarily redirect login to dashboard */}
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route
-            path="/*"
+            path="/"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/inventory" element={<Inventory />} />
-                    <Route path="/sales" element={<Sales />} />
-                    <Route path="/expenses" element={<Expenses />} />
-                    <Route path="/expense-reports" element={<ProtectedRoute><ExpenseReports /></ProtectedRoute>} />
-                    <Route path="/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
-                    <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-                    <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
-                    <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                    <Route path="/staff" element={<AdminRoute><StaffManagement /></AdminRoute>} />
-                    <Route path="/allocations" element={<AdminRoute><StockAllocation /></AdminRoute>} />
-                    <Route path="/my-sales" element={<ProtectedRoute><StaffSales /></ProtectedRoute>} />
-                    <Route path="/debt-book" element={<ProtectedRoute><DebtBook /></ProtectedRoute>} />
-                    <Route path="/supplier-payments" element={<ProtectedRoute><SupplierPayments /></ProtectedRoute>} />
-                  </Routes>
-                </Layout>
+                <Layout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="sales" element={<Sales />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="suppliers" element={<Suppliers />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="staff" element={<StaffManagement />} />
+            <Route path="stock-allocation" element={<StockAllocation />} />
+            <Route path="my-sales" element={<StaffSales />} />
+            <Route path="staff-sales" element={<StaffSales />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="debt-book" element={<DebtBook />} />
+            <Route path="supplier-payments" element={<SupplierPayments />} />
+            <Route path="expense-reports" element={<ExpenseReports />} />
+            <Route path="savings" element={<Savings />} />
+          </Route>
         </Routes>
       </Router>
     </AuthProvider>
