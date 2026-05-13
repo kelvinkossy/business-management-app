@@ -83,7 +83,7 @@ const Layout = ({ children }) => {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 w-72 bg-gradient-to-b from-white to-gray-50 shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed inset-y-0 left-0 z-30 w-72 bg-gradient-to-b from-white to-gray-50 shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:static lg:inset-0 lg:translate-x-0 lg:w-72 lg:shadow-none`}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between h-20 px-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-purple-600">
             <h1 className="text-xl font-bold text-white flex items-center">
@@ -92,7 +92,8 @@ const Layout = ({ children }) => {
               ) : (
                 <LayoutDashboard className="w-6 h-6 mr-2" />
               )}
-              {businessName}
+              <span className="hidden sm:inline">{businessName}</span>
+              <span className="sm:hidden">{businessName.substring(0, 10)}...</span>
             </h1>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -148,7 +149,7 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-72">
         <header className="bg-gradient-to-r from-white via-blue-50 to-purple-50 backdrop-blur-md shadow-soft sticky top-0 z-10 border-b border-gray-200">
-          <div className="flex items-center justify-between h-20 px-8">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-8">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -156,19 +157,19 @@ const Layout = ({ children }) => {
               <Menu className="w-6 h-6 text-gray-600" />
             </button>
             <div className="flex-1" />
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
                 <div className="text-right hidden sm:block">
                   <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
                   <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg text-sm sm:text-base">
                   {user?.name?.charAt(0) || 'U'}
                 </div>
               </div>
           </div>
         </header>
 
-        <main className="p-8">{children}</main>
+        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
 
       {/* AI Widget */}

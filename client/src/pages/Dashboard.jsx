@@ -107,29 +107,29 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-6 animate-slide-in hover:-translate-y-1"
+              className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-4 sm:p-6 animate-slide-in hover:-translate-y-1"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  <p className={`text-sm ${stat.textColor} mt-2 flex items-center`}>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">{stat.title}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                  <p className={`text-xs sm:text-sm ${stat.textColor} mt-2 flex items-center`}>
                     {stat.trend}
                   </p>
                 </div>
-                <div className={`bg-gradient-to-br ${stat.gradient} p-4 rounded-xl shadow-lg`}>
-                  <Icon className="w-6 h-6 text-white" />
+                <div className={`bg-gradient-to-br ${stat.gradient} p-3 sm:p-4 rounded-xl shadow-lg`}>
+                  <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
               </div>
             </div>
@@ -150,12 +150,12 @@ const Dashboard = () => {
       )}
 
       {/* Recent Sales */}
-      <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-6 animate-slide-in" style={{ animationDelay: '400ms' }}>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Sales</h2>
+      <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-4 sm:p-6 animate-slide-in" style={{ animationDelay: '400ms' }}>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Recent Sales</h2>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[500px]">
             <thead>
-              <tr className="text-left text-gray-600 text-sm">
+              <tr className="text-left text-gray-600 text-xs sm:text-sm">
                 <th className="pb-3">Customer</th>
                 <th className="pb-3">Date</th>
                 <th className="pb-3">Total</th>
@@ -165,11 +165,11 @@ const Dashboard = () => {
             <tbody>
               {recentSales.map((sale) => (
                 <tr key={sale.id} className="border-t">
-                  <td className="py-3">{sale.customer_name || 'Walk-in'}</td>
-                  <td className="py-3 text-gray-600">
+                  <td className="py-3 text-xs sm:text-sm">{sale.customer_name || 'Walk-in'}</td>
+                  <td className="py-3 text-gray-600 text-xs sm:text-sm">
                     {new Date(sale.sale_date).toLocaleDateString()}
                   </td>
-                  <td className="py-3 font-semibold">₦{sale.total.toFixed(2)}</td>
+                  <td className="py-3 font-semibold text-xs sm:text-sm">₦{sale.total.toFixed(2)}</td>
                   <td className="py-3">
                     <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
                       {sale.payment_method || 'Cash'}
@@ -183,12 +183,12 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Expenses */}
-      <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-6 animate-slide-in" style={{ animationDelay: '500ms' }}>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Expenses</h2>
+      <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-4 sm:p-6 animate-slide-in" style={{ animationDelay: '500ms' }}>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Recent Expenses</h2>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[500px]">
             <thead>
-              <tr className="text-left text-gray-600 text-sm">
+              <tr className="text-left text-gray-600 text-xs sm:text-sm">
                 <th className="pb-3">Description</th>
                 <th className="pb-3">Category</th>
                 <th className="pb-3">Date</th>
@@ -198,18 +198,12 @@ const Dashboard = () => {
             <tbody>
               {recentExpenses.map((expense) => (
                 <tr key={expense.id} className="border-t hover:bg-gray-50 transition-colors">
-                  <td className="py-3">{expense.description}</td>
-                  <td className="py-3">
-                    <span className="px-2 py-1 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-full text-xs font-medium">
-                      {expense.category}
-                    </span>
+                  <td className="py-3 text-xs sm:text-sm">{expense.description}</td>
+                  <td className="py-3 text-xs sm:text-sm">{expense.category}</td>
+                  <td className="py-3 text-gray-600 text-xs sm:text-sm">
+                    {new Date(expense.date).toLocaleDateString()}
                   </td>
-                  <td className="py-3 text-gray-600">
-                    {new Date(expense.expense_date).toLocaleDateString()}
-                  </td>
-                  <td className="py-3 font-semibold text-rose-600">
-                    -₦{expense.amount.toFixed(2)}
-                  </td>
+                  <td className="py-3 font-semibold text-xs sm:text-sm">₦{expense.amount.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

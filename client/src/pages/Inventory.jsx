@@ -132,17 +132,17 @@ const Inventory = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Inventory</h1>
-        <div className="flex space-x-2">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Inventory</h1>
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
           {isAdmin && selectedProducts.length > 0 && (
             <button
               onClick={handleBulkDelete}
-              className="flex items-center px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl"
+              className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl text-sm"
             >
               <Trash2 className="w-5 h-5 mr-2" />
-              Delete Selected ({selectedProducts.length})
+              Delete ({selectedProducts.length})
             </button>
           )}
           <button
@@ -151,7 +151,7 @@ const Inventory = () => {
               setFormData({ name: '', sku: '', description: '', category: '', quantity: 0, unit_price: 0, cost_price: 0, supplier_id: '' });
               setShowModal(true);
             }}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
+            className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl text-sm"
           >
             <Plus className="w-5 h-5 mr-2" />
             Add Product
@@ -160,18 +160,18 @@ const Inventory = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-6 animate-slide-in hover:-translate-y-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+        <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-4 sm:p-6 animate-slide-in hover:-translate-y-1">
           <p className="text-sm font-medium text-gray-600">Total Products</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{totalProducts}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">{totalProducts}</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-6 animate-slide-in hover:-translate-y-1" style={{ animationDelay: '100ms' }}>
+        <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-4 sm:p-6 animate-slide-in hover:-translate-y-1" style={{ animationDelay: '100ms' }}>
           <p className="text-sm font-medium text-gray-600">Low Stock Items</p>
-          <p className="text-3xl font-bold text-amber-600 mt-2">{lowStockCount}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-amber-600 mt-2">{lowStockCount}</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-6 animate-slide-in hover:-translate-y-1" style={{ animationDelay: '200ms' }}>
+        <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-4 sm:p-6 animate-slide-in hover:-translate-y-1" style={{ animationDelay: '200ms' }}>
           <p className="text-sm font-medium text-gray-600">Total Stock Value</p>
-          <p className="text-3xl font-bold text-blue-600 mt-2">₦{totalStockValue.toFixed(2)}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-blue-600 mt-2">₦{totalStockValue.toFixed(2)}</p>
         </div>
       </div>
 
@@ -212,88 +212,90 @@ const Inventory = () => {
       </div>
 
       <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden animate-slide-in" style={{ animationDelay: '400ms' }}>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[600px]">
-          <thead className="bg-gray-50">
-            <tr>
-              {isAdmin && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  <input
-                    type="checkbox"
-                    checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
-                    onChange={toggleSelectAll}
-                    className="rounded"
-                  />
-                </th>
-              )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-              {isAdmin && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredProducts.map((product) => (
-              <tr key={product.id} className="hover:bg-gray-50">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[800px]">
+            <thead className="bg-gradient-to-r from-blue-50 to-purple-50">
+              <tr className="text-left text-gray-600 text-xs sm:text-sm">
                 {isAdmin && (
-                  <td className="px-6 py-4">
+                  <th className="px-4 sm:px-6 py-3">
                     <input
                       type="checkbox"
-                      checked={selectedProducts.includes(product.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedProducts([...selectedProducts, product.id]);
-                        } else {
-                          setSelectedProducts(selectedProducts.filter(id => id !== product.id));
-                        }
-                      }}
+                      checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
+                      onChange={toggleSelectAll}
                       className="rounded"
                     />
-                  </td>
+                  </th>
                 )}
-                <td className="px-6 py-4">
-                  <div className="font-medium text-gray-900">{product.name}</div>
-                  <div className="text-sm text-gray-500">{product.description}</div>
-                </td>
-                <td className="px-6 py-4 text-gray-600">{product.sku}</td>
-                <td className="px-6 py-4">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                    {product.category}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`font-semibold ${product.quantity < 10 ? 'text-red-600' : 'text-green-600'}`}>
-                    {product.quantity}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-gray-900">{product.unit_price ? `₦${product.unit_price.toFixed(2)}` : '-'}</td>
-                <td className="px-6 py-4 text-gray-600">{product.supplier_name || '-'}</td>
+                <th className="px-4 sm:px-6 py-3">Product</th>
+                <th className="px-4 sm:px-6 py-3">SKU</th>
+                <th className="px-4 sm:px-6 py-3">Category</th>
+                <th className="px-4 sm:px-6 py-3">Quantity</th>
+                <th className="px-4 sm:px-6 py-3">Unit Price</th>
+                <th className="px-4 sm:px-6 py-3">Supplier</th>
                 {isAdmin && (
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(product)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                  <th className="px-4 sm:px-6 py-3">Actions</th>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filteredProducts.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  {isAdmin && (
+                    <td className="px-4 sm:px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.includes(product.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedProducts([...selectedProducts, product.id]);
+                          } else {
+                            setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                          }
+                        }}
+                        className="rounded"
+                      />
+                    </td>
+                  )}
+                  <td className="px-4 sm:px-6 py-4">
+                    <div className="font-medium text-gray-900 text-xs sm:text-sm">{product.name}</div>
+                    <div className="text-xs sm:text-sm text-gray-500">{product.description}</div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 text-gray-600 text-xs sm:text-sm">{product.sku}</td>
+                  <td className="px-4 sm:px-6 py-4">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                      {product.category}
+                    </span>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4">
+                    <span className={`font-semibold text-xs sm:text-sm ${product.quantity < 10 ? 'text-red-600' : 'text-green-600'}`}>
+                      {product.quantity}
+                    </span>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 text-gray-900 text-xs sm:text-sm">{product.unit_price ? `₦${product.unit_price.toFixed(2)}` : '-'}</td>
+                  <td className="px-4 sm:px-6 py-4 text-gray-600 text-xs sm:text-sm">{product.supplier_name || '-'}</td>
+                  {isAdmin && (
+                    <td className="px-4 sm:px-6 py-4">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEdit(product)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showModal && (
